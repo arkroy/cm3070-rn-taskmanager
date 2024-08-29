@@ -1,0 +1,59 @@
+type User @model @auth(rules: [{ allow: owner }, { allow: groups, groups: ["Admin"] }]) {
+  id: ID!
+  fullName: String!
+  email: AWSEmail!
+  profilePicture: String
+  preferredTimezone: String
+  unitOfMeasurement: UnitOfMeasurement
+  tasks: [Task] @hasMany(indexName: "byUser", fields: ["id"])
+}
+
+type Task @model @auth(rules: [{ allow: owner }, { allow: groups, groups: ["Admin"] }]) {
+  id: ID!
+  title: String!
+  date: AWSDate!
+  startTime: AWSDateTime!
+  endTime: AWSDateTime!
+  location: String!
+  type: TaskType!
+  cost: Float
+  notes: String
+  voiceNotes: [VoiceNote] @hasMany(indexName: "byTask", fields: ["id"])
+  checklist: [ChecklistItem] @hasMany(indexName: "byTask", fields: ["id"])
+  attachments: [Attachment] @hasMany(indexName: "byTask", fields: ["id"])
+  user: User @belongsTo(fields: ["userId"])
+  userId: ID! @index(name: "byUser", sortKeyFields: ["id"])
+}
+
+type VoiceNote @model @auth(rules: [{ allow: owner }, { allow: groups, groups: ["Admin"] }]) {
+  id: ID!
+  task: Task @belongsTo(fields: ["taskId"])
+  taskId: ID! @index(name: "byTask", sortKeyFields: ["id"])
+  fileUrl: String!
+}
+
+type ChecklistItem @model @auth(rules: [{ allow: owner }, { allow: groups, groups: ["Admin"] }]) {
+  id: ID!
+  task: Task @belongsTo(fields: ["taskId"])
+  taskId: ID! @index(name: "byTask", sortKeyFields: ["id"])
+  description: String!
+  isCompleted: Boolean!
+}
+
+type Attachment @model @auth(rules: [{ allow: owner }, { allow: groups, groups: ["Admin"] }]) {
+  id: ID!
+  task: Task @belongsTo(fields: ["taskId"])
+  taskId: ID! @index(name: "byTask", sortKeyFields: ["id"])
+  fileUrl: String!
+  fileType: String!
+}
+
+enum TaskType {
+  PROFESSIONAL
+  PERSONAL
+}
+
+enum UnitOfMeasurement {
+  IMPERIAL
+  METRIC
+}
