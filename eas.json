@@ -1,0 +1,15 @@
+{
+  "cli": {
+    "version": ">= 11.0.1"
+  },
+  "build": {
+    "development": {
+      "ios": {
+        "simulator": true
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}
