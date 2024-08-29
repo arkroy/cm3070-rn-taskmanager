@@ -1,5 +1,5 @@
 import { ApolloClient, InMemoryCache, HttpLink } from '@apollo/client';
-import awsconfig from './src/aws-exports';
+import awsconfig from '../aws-exports';
 
 const client = new ApolloClient({
   link: new HttpLink({

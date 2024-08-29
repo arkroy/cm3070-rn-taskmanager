@@ -1,47 +1,46 @@
 import React, { useState } from 'react';
 import { View, TouchableOpacity } from 'react-native';
 import { TextInput, Button, Text, useTheme } from 'react-native-paper';
-import { signIn, signOut } from '@aws-amplify/auth';
+import { signIn } from '@aws-amplify/auth';
+import { isAuthenticatedVar } from '../../utils/apolloState'; // Import the reactive variable
 import styles from './loginScreen.styles';
 
-function LoginScreen({ navigation, onLoginSuccess }) {
+function LoginScreen({ navigation }) {
   const [username, setUsername] = useState('');
-  const [password, setPassword] = useState(''); // Initialize with an empty string
+  const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const { colors } = useTheme();
 
+  const handleLogin = async () => {
+    setErrorMessage(''); // Reset any previous error messages
 
-const handleLogin = async () => {
-  setErrorMessage(''); // Reset any previous error messages
+    try {
+      if (!username.trim() || !password.trim()) {
+        setErrorMessage("Email and Password are required.");
+        return;
+      }
 
-  try {
-    if (!username.trim() || !password.trim()) {
-      setErrorMessage("Email and Password are required.");
-      return;
+      console.log('Attempting sign in with:', username.trim());
+
+      const { isSignedIn } = await signIn({
+        username: username.trim(),
+        password: password.trim(),
+        options: {
+          authFlowType: 'USER_PASSWORD_AUTH',
+        },
+      });
+
+      if (isSignedIn) {
+        isAuthenticatedVar(true); // Update the reactive variable to true
+        navigation.navigate('Dashboard');
+      } else {
+        setErrorMessage('Login failed. Please try again.');
+      }
+    } catch (error) {
+      console.log('Sign in error details:', error); // Log the full error object
+      setErrorMessage(error.message || 'An unknown error occurred.');
     }
-
-    console.log('Attempting sign in with:', username.trim());
-
-    const { isSignedIn, nextStep } = await signIn({
-      username: username.trim(),
-      password: password.trim(),
-      options: {
-        authFlowType: 'USER_PASSWORD_AUTH',
-      },
-    });
-
-    if (isSignedIn) {
-      // Trigger the auth status check to update the app state
-      onLoginSuccess(); // This should be passed as a prop from App.js
-    } else {
-      console.log('Next step:', nextStep);
-      // Handle other steps if necessary (e.g., MFA)
-    }
-  } catch (error) {
-    console.log('Sign in error details:', error); // Log the full error object
-    setErrorMessage(error.message || 'An unknown error occurred.');
-  }
-};
+  };
 
   const handleSignup = () => {
     navigation.navigate('Registration');
