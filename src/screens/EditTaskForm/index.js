@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, TextInput, Button, StyleSheet, ScrollView, TouchableOpacity, Text } from 'react-native';
+import { View, TextInput, Button, StyleSheet, ScrollView } from 'react-native';
 import { useReactiveVar } from '@apollo/client';
 import { currentTaskVar } from '../../utils/apolloState';
 import { useMutation, gql } from '@apollo/client';
-import DateTimePickerModal from 'react-native-modal-datetime-picker';
-import moment from 'moment';
+import { getCurrentUser } from 'aws-amplify/auth';
 
 const UPDATE_TASK = gql`
   mutation UpdateTask($input: UpdateTaskInput!) {
@@ -53,11 +52,8 @@ function EditTaskForm({ navigation }) {
   const [notes, setNotes] = useState(task?.notes || '');
   const [userId, setUserId] = useState('');
 
-  const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
-  const [isStartTimePickerVisible, setStartTimePickerVisibility] = useState(false);
-  const [isEndTimePickerVisible, setEndTimePickerVisibility] = useState(false);
-
   useEffect(() => {
+
     async function currentAuthenticatedUser() {
       try {
         const { username, userId, signInDetails } = await getCurrentUser();
@@ -127,45 +123,6 @@ function EditTaskForm({ navigation }) {
     }
   };
 
-  const showDatePicker = () => {
-    setDatePickerVisibility(true);
-  };
-
-  const hideDatePicker = () => {
-    setDatePickerVisibility(false);
-  };
-
-  const handleConfirmDate = (selectedDate) => {
-    setDate(moment(selectedDate).format('YYYY-MM-DD'));
-    hideDatePicker();
-  };
-
-  const showStartTimePicker = () => {
-    setStartTimePickerVisibility(true);
-  };
-
-  const hideStartTimePicker = () => {
-    setStartTimePickerVisibility(false);
-  };
-
-  const handleConfirmStartTime = (selectedTime) => {
-    setStartTime(moment(selectedTime).format('HH:mm:ss'));
-    hideStartTimePicker();
-  };
-
-  const showEndTimePicker = () => {
-    setEndTimePickerVisibility(true);
-  };
-
-  const hideEndTimePicker = () => {
-    setEndTimePickerVisibility(false);
-  };
-
-  const handleConfirmEndTime = (selectedTime) => {
-    setEndTime(moment(selectedTime).format('HH:mm:ss'));
-    hideEndTimePicker();
-  };
-
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <TextInput
@@ -187,52 +144,24 @@ function EditTaskForm({ navigation }) {
         keyboardType="numeric"
         onChangeText={setCost}
       />
-
-      <TouchableOpacity onPress={showDatePicker}>
-        <TextInput
-          style={styles.input}
-          placeholder="Date (YYYY-MM-DD)"
-          value={date}
-          editable={false}
-        />
-      </TouchableOpacity>
-      <DateTimePickerModal
-        isVisible={isDatePickerVisible}
-        mode="date"
-        onConfirm={handleConfirmDate}
-        onCancel={hideDatePicker}
+      <TextInput
+        style={styles.input}
+        placeholder="Date (YYYY-MM-DD)"
+        value={date}
+        onChangeText={setDate}
       />
-
-      <TouchableOpacity onPress={showStartTimePicker}>
-        <TextInput
-          style={styles.input}
-          placeholder="Start Time (HH:MM:SS)"
-          value={startTime}
-          editable={false}
-        />
-      </TouchableOpacity>
-      <DateTimePickerModal
-        isVisible={isStartTimePickerVisible}
-        mode="time"
-        onConfirm={handleConfirmStartTime}
-        onCancel={hideStartTimePicker}
+      <TextInput
+        style={styles.input}
+        placeholder="Start Time (HH:MM:SS)"
+        value={startTime}
+        onChangeText={setStartTime}
       />
-
-      <TouchableOpacity onPress={showEndTimePicker}>
-        <TextInput
-          style={styles.input}
-          placeholder="End Time (HH:MM:SS)"
-          value={endTime}
-          editable={false}
-        />
-      </TouchableOpacity>
-      <DateTimePickerModal
-        isVisible={isEndTimePickerVisible}
-        mode="time"
-        onConfirm={handleConfirmEndTime}
-        onCancel={hideEndTimePicker}
+      <TextInput
+        style={styles.input}
+        placeholder="End Time (HH:MM:SS)"
+        value={endTime}
+        onChangeText={setEndTime}
       />
-
       <TextInput
         style={styles.input}
         placeholder="Notes"
