@@ -1,14 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { Amplify } from 'aws-amplify';
 import awsconfig from './src/aws-exports';
-
 import { fetchAuthSession } from '@aws-amplify/auth';
-
 import { ApolloProvider, useReactiveVar } from '@apollo/client';
-import { isAuthenticatedVar } from './src/utils/apolloState';
+import { isAuthenticatedVar, userVar } from './src/utils/apolloState';
 import client from './src/utils/ApolloClient';
-
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import LoginScreen from './src/screens/Login';
@@ -17,6 +14,8 @@ import ForgotPasswordScreen from './src/screens/ForgotPassword';
 import DashboardScreen from './src/screens/Dashboard';
 import VerificationScreen from './src/screens/Verification';
 import AppHeader from './src/components/AppHeader';
+import TaskDetailsScreen from './src/screens/TaskDetails';
+import EditTaskForm from './src/screens/EditTaskForm';
 
 const Stack = createStackNavigator();
 Amplify.configure(awsconfig);
@@ -27,21 +26,22 @@ export default function App() {
   useEffect(() => {
     const checkAuthStatus = async () => {
       try {
-        const { accessToken } = (await fetchAuthSession()).tokens ?? {};
+        const { accessToken, idToken } = (await fetchAuthSession()).tokens ?? {};
         if (accessToken) {
           isAuthenticatedVar(true); // Update reactive variable
-          console.log('User is signed in:', accessToken);
+          userVar(idToken.payload); // Store user details
         } else {
           isAuthenticatedVar(false);
+          userVar(null); // Clear user details if not authenticated
         }
       } catch (error) {
         console.log('No user is signed in:', error);
         isAuthenticatedVar(false);
+        userVar(null);
       }
     };
 
     checkAuthStatus();
-    console.log('CHECKED STATUS');
   }, []);
 
   if (isAuthenticated === null) {
@@ -62,30 +62,7 @@ export default function App() {
                 name="Dashboard"
                 component={DashboardScreen}
                 options={{
-                  header: () => <AppHeader screen="Dashboard" />, // Use custom header
-                }}
-              />
-              
-              {/* Add other authenticated screens here */}
-              {/* <Stack.Screen
-                name="Schedule"
-                component={ScheduleScreen}
-                options={{
-                  header: () => <AppHeader screen="Schedule" />,
-                }}
-              />
-              <Stack.Screen
-                name="Insights"
-                component={InsightsScreen}
-                options={{
-                  header: () => <AppHeader screen="Insights" />,
-                }}
-              />
-              <Stack.Screen
-                name="Settings"
-                component={SettingsScreen}
-                options={{
-                  header: () => <AppHeader screen="Settings" />,
+                  header: () => <AppHeader screen="Dashboard" />,
                 }}
               />
               <Stack.Screen
@@ -94,7 +71,15 @@ export default function App() {
                 options={{
                   header: () => <AppHeader screen="TaskDetails" />,
                 }}
-              /> */}
+              />
+              <Stack.Screen
+                name="EditTaskForm"
+                component={EditTaskForm}
+                options={{
+                  header: () => <AppHeader screen="EditTaskForm" />,
+                }}
+              />
+              {/* Add other authenticated screens here */}
             </>
           ) : (
             <>

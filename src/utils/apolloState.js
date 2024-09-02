@@ -1,4 +1,5 @@
 import { makeVar } from '@apollo/client';
 
-// Reactive variable to store authentication status
-export const isAuthenticatedVar = makeVar(false);
+export const isAuthenticatedVar = makeVar(null); // Boolean or null for authentication status
+export const userVar = makeVar(null); // Store user details here
+export const currentTaskVar = makeVar(null); // Store the current task details

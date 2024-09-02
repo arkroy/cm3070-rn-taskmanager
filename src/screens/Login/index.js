@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, TouchableOpacity } from 'react-native';
 import { TextInput, Button, Text, useTheme } from 'react-native-paper';
 import { signIn } from '@aws-amplify/auth';
-import { isAuthenticatedVar } from '../../utils/apolloState'; // Import the reactive variable
+import { isAuthenticatedVar, userVar } from '../../utils/apolloState'; // Import the reactive variable
 import styles from './loginScreen.styles';
 
 function LoginScreen({ navigation }) {
@@ -13,25 +13,39 @@ function LoginScreen({ navigation }) {
 
   const handleLogin = async () => {
     setErrorMessage(''); // Reset any previous error messages
-
+  
     try {
       if (!username.trim() || !password.trim()) {
         setErrorMessage("Email and Password are required.");
         return;
       }
-
+  
       console.log('Attempting sign in with:', username.trim());
-
-      const { isSignedIn } = await signIn({
+  
+      // Sign in the user using Amplify Auth
+      const user = await signIn({
         username: username.trim(),
         password: password.trim(),
         options: {
           authFlowType: 'USER_PASSWORD_AUTH',
         },
       });
-
-      if (isSignedIn) {
-        isAuthenticatedVar(true); // Update the reactive variable to true
+  
+      if (user) {
+        // Assuming user is successfully signed in, fetch the current session
+        const session = await Auth.currentSession();
+        const token = session.getIdToken().getJwtToken();
+  
+        // Store the user details and token in the reactive variable
+        userVar({
+          ...user.attributes,
+          token,
+        });
+  
+        // Update the authentication state in the reactive variable
+        isAuthenticatedVar(true);
+  
+        // Navigate to the Dashboard
         navigation.navigate('Dashboard');
       } else {
         setErrorMessage('Login failed. Please try again.');
