@@ -82,6 +82,9 @@ export const createTask = /* GraphQL */ `
       startTime
       endTime
       location
+      latitude
+      longitude
+      placeId
       type
       cost
       notes
@@ -129,6 +132,9 @@ export const updateTask = /* GraphQL */ `
       startTime
       endTime
       location
+      latitude
+      longitude
+      placeId
       type
       cost
       notes
@@ -176,6 +182,9 @@ export const deleteTask = /* GraphQL */ `
       startTime
       endTime
       location
+      latitude
+      longitude
+      placeId
       type
       cost
       notes
@@ -225,6 +234,9 @@ export const createVoiceNote = /* GraphQL */ `
         startTime
         endTime
         location
+        latitude
+        longitude
+        placeId
         type
         cost
         notes
@@ -257,6 +269,9 @@ export const updateVoiceNote = /* GraphQL */ `
         startTime
         endTime
         location
+        latitude
+        longitude
+        placeId
         type
         cost
         notes
@@ -289,6 +304,9 @@ export const deleteVoiceNote = /* GraphQL */ `
         startTime
         endTime
         location
+        latitude
+        longitude
+        placeId
         type
         cost
         notes
@@ -321,6 +339,9 @@ export const createChecklistItem = /* GraphQL */ `
         startTime
         endTime
         location
+        latitude
+        longitude
+        placeId
         type
         cost
         notes
@@ -354,6 +375,9 @@ export const updateChecklistItem = /* GraphQL */ `
         startTime
         endTime
         location
+        latitude
+        longitude
+        placeId
         type
         cost
         notes
@@ -387,6 +411,9 @@ export const deleteChecklistItem = /* GraphQL */ `
         startTime
         endTime
         location
+        latitude
+        longitude
+        placeId
         type
         cost
         notes
@@ -420,6 +447,9 @@ export const createAttachment = /* GraphQL */ `
         startTime
         endTime
         location
+        latitude
+        longitude
+        placeId
         type
         cost
         notes
@@ -453,6 +483,9 @@ export const updateAttachment = /* GraphQL */ `
         startTime
         endTime
         location
+        latitude
+        longitude
+        placeId
         type
         cost
         notes
@@ -486,6 +519,9 @@ export const deleteAttachment = /* GraphQL */ `
         startTime
         endTime
         location
+        latitude
+        longitude
+        placeId
         type
         cost
         notes

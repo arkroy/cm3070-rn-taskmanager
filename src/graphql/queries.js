@@ -54,6 +54,9 @@ export const getTask = /* GraphQL */ `
       startTime
       endTime
       location
+      latitude
+      longitude
+      placeId
       type
       cost
       notes
@@ -103,6 +106,9 @@ export const listTasks = /* GraphQL */ `
         startTime
         endTime
         location
+        latitude
+        longitude
+        placeId
         type
         cost
         notes
@@ -141,6 +147,9 @@ export const tasksByUserIdAndId = /* GraphQL */ `
         startTime
         endTime
         location
+        latitude
+        longitude
+        placeId
         type
         cost
         notes
@@ -166,6 +175,9 @@ export const getVoiceNote = /* GraphQL */ `
         startTime
         endTime
         location
+        latitude
+        longitude
+        placeId
         type
         cost
         notes
@@ -247,6 +259,9 @@ export const getChecklistItem = /* GraphQL */ `
         startTime
         endTime
         location
+        latitude
+        longitude
+        placeId
         type
         cost
         notes
@@ -331,6 +346,9 @@ export const getAttachment = /* GraphQL */ `
         startTime
         endTime
         location
+        latitude
+        longitude
+        placeId
         type
         cost
         notes

@@ -23,6 +23,9 @@ type Task @model @auth(rules: [
   startTime: AWSDateTime!
   endTime: AWSDateTime!
   location: String!
+  latitude: Float
+  longitude: Float
+  placeId: String
   type: TaskType!
   cost: Float
   notes: String

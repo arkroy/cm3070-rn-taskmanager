@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, TextInput, Button, StyleSheet, ScrollView, Platform, Text } from 'react-native';
+import { View, Text, TextInput, Button, StyleSheet, FlatList } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useReactiveVar } from '@apollo/client';
 import { currentTaskVar } from '../../utils/apolloState';
 import { useMutation, gql } from '@apollo/client';
 import { getCurrentUser } from 'aws-amplify/auth';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import PlacesInput from '../../components/PlacesInput';
 
 const UPDATE_TASK = gql`
   mutation UpdateTask($input: UpdateTaskInput!) {
@@ -96,7 +97,7 @@ function EditTaskForm({ navigation }) {
       title,
       location,
       cost: cost ? parseFloat(cost) : null,
-      date: date.toISOString().split('T')[0],
+      date: date.toISOString().split('T')[0], // Format date as YYYY-MM-DD
       startTime: startTime.toISOString(),
       endTime: endTime.toISOString(),
       notes,
@@ -124,62 +125,68 @@ function EditTaskForm({ navigation }) {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <TextInput
-        style={styles.input}
-        placeholder="Title"
-        value={title}
-        onChangeText={setTitle}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Location"
-        value={location}
-        onChangeText={setLocation}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Cost"
-        value={cost}
-        keyboardType="numeric"
-        onChangeText={setCost}
-      />
-
-      <Text style={styles.label}>Date</Text>
-      <DateTimePicker
-        value={date}
-        mode="date"
-        display="default"
-        onChange={(event, selectedDate) => setDate(selectedDate || date)}
-        style={styles.picker}
-      />
-
-      <Text style={styles.label}>Start Time</Text>
-      <DateTimePicker
-        value={startTime}
-        mode="time"
-        display="default"
-        onChange={(event, selectedTime) => setStartTime(selectedTime || startTime)}
-        style={styles.picker}
-      />
-
-      <Text style={styles.label}>End Time</Text>
-      <DateTimePicker
-        value={endTime}
-        mode="time"
-        display="default"
-        onChange={(event, selectedTime) => setEndTime(selectedTime || endTime)}
-        style={styles.picker}
-      />
-
-      <TextInput
-        style={styles.input}
-        placeholder="Notes"
-        value={notes}
-        onChangeText={setNotes}
-      />
-      <Button title={isEditMode ? 'Save' : 'Create'} onPress={handleSave} />
-    </ScrollView>
+    <FlatList
+      data={[{ key: 'form' }]} // A dummy item to wrap form fields inside FlatList
+      renderItem={() => (
+        <View style={styles.container}>
+          <TextInput
+            style={styles.input}
+            placeholder="Title"
+            value={title}
+            onChangeText={setTitle}
+          />
+          <PlacesInput
+            placeholder="Location"
+            onLocationSelect={setLocation}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Cost"
+            value={cost}
+            keyboardType="numeric"
+            onChangeText={setCost}
+          />
+          <View style={styles.pickerContainer}>
+            <Text style={styles.label}>Date</Text>
+            <DateTimePicker
+              value={date}
+              mode="date"
+              display="default"
+              onChange={(event, selectedDate) => setDate(selectedDate || date)}
+              style={styles.picker}
+            />
+          </View>
+          <View style={styles.pickerContainer}>
+            <Text style={styles.label}>Start Time</Text>
+            <DateTimePicker
+              value={startTime}
+              mode="time"
+              display="default"
+              onChange={(event, selectedTime) => setStartTime(selectedTime || startTime)}
+              style={styles.picker}
+            />
+          </View>
+          <View style={styles.pickerContainer}>
+            <Text style={styles.label}>End Time</Text>
+            <DateTimePicker
+              value={endTime}
+              mode="time"
+              display="default"
+              onChange={(event, selectedTime) => setEndTime(selectedTime || endTime)}
+              style={styles.picker}
+            />
+          </View>
+          <TextInput
+            style={styles.input}
+            placeholder="Notes"
+            value={notes}
+            onChangeText={setNotes}
+          />
+          <Button title={isEditMode ? 'Save' : 'Create'} onPress={handleSave} />
+        </View>
+      )}
+      keyExtractor={(item) => item.key}
+    />
   );
 }
 
@@ -196,13 +203,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ddd',
   },
+  pickerContainer: {
+    marginBottom: 15,
+  },
   label: {
-    marginBottom: 5,
     fontSize: 16,
-    color: '#333',
+    marginBottom: 5,
   },
   picker: {
-    marginBottom: 15,
+    width: '100%',
   },
 });
 
