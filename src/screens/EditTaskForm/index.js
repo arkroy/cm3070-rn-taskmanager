@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, TextInput, Button, StyleSheet, ScrollView } from 'react-native';
+import { View, TextInput, Button, StyleSheet, ScrollView, Platform, Text } from 'react-native';
 import { useReactiveVar } from '@apollo/client';
 import { currentTaskVar } from '../../utils/apolloState';
 import { useMutation, gql } from '@apollo/client';
 import { getCurrentUser } from 'aws-amplify/auth';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 const UPDATE_TASK = gql`
   mutation UpdateTask($input: UpdateTaskInput!) {
@@ -46,14 +47,13 @@ function EditTaskForm({ navigation }) {
   const [title, setTitle] = useState(task?.title || '');
   const [location, setLocation] = useState(task?.location || '');
   const [cost, setCost] = useState(task?.cost?.toString() || '');
-  const [date, setDate] = useState(task?.date || '');
-  const [startTime, setStartTime] = useState(task?.startTime || '');
-  const [endTime, setEndTime] = useState(task?.endTime || '');
+  const [date, setDate] = useState(task?.date ? new Date(task.date) : new Date());
+  const [startTime, setStartTime] = useState(task?.startTime ? new Date(task.startTime) : new Date());
+  const [endTime, setEndTime] = useState(task?.endTime ? new Date(task.endTime) : new Date());
   const [notes, setNotes] = useState(task?.notes || '');
   const [userId, setUserId] = useState('');
 
   useEffect(() => {
-
     async function currentAuthenticatedUser() {
       try {
         const { username, userId, signInDetails } = await getCurrentUser();
@@ -96,9 +96,9 @@ function EditTaskForm({ navigation }) {
       title,
       location,
       cost: cost ? parseFloat(cost) : null,
-      date,
-      startTime,
-      endTime,
+      date: date.toISOString().split('T')[0],
+      startTime: startTime.toISOString(),
+      endTime: endTime.toISOString(),
       notes,
       type: task?.type || 'PROFESSIONAL',
       userId,
@@ -144,24 +144,34 @@ function EditTaskForm({ navigation }) {
         keyboardType="numeric"
         onChangeText={setCost}
       />
-      <TextInput
-        style={styles.input}
-        placeholder="Date (YYYY-MM-DD)"
+
+      <Text style={styles.label}>Date</Text>
+      <DateTimePicker
         value={date}
-        onChangeText={setDate}
+        mode="date"
+        display="default"
+        onChange={(event, selectedDate) => setDate(selectedDate || date)}
+        style={styles.picker}
       />
-      <TextInput
-        style={styles.input}
-        placeholder="Start Time (HH:MM:SS)"
+
+      <Text style={styles.label}>Start Time</Text>
+      <DateTimePicker
         value={startTime}
-        onChangeText={setStartTime}
+        mode="time"
+        display="default"
+        onChange={(event, selectedTime) => setStartTime(selectedTime || startTime)}
+        style={styles.picker}
       />
-      <TextInput
-        style={styles.input}
-        placeholder="End Time (HH:MM:SS)"
+
+      <Text style={styles.label}>End Time</Text>
+      <DateTimePicker
         value={endTime}
-        onChangeText={setEndTime}
+        mode="time"
+        display="default"
+        onChange={(event, selectedTime) => setEndTime(selectedTime || endTime)}
+        style={styles.picker}
       />
+
       <TextInput
         style={styles.input}
         placeholder="Notes"
@@ -185,6 +195,14 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     borderWidth: 1,
     borderColor: '#ddd',
+  },
+  label: {
+    marginBottom: 5,
+    fontSize: 16,
+    color: '#333',
+  },
+  picker: {
+    marginBottom: 15,
   },
 });
 
