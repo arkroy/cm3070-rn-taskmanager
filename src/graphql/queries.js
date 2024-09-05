@@ -359,7 +359,7 @@ export const getAttachment = /* GraphQL */ `
         __typename
       }
       taskId
-      fileUrl
+      filePath
       fileType
       createdAt
       updatedAt
@@ -378,7 +378,7 @@ export const listAttachments = /* GraphQL */ `
       items {
         id
         taskId
-        fileUrl
+        filePath
         fileType
         createdAt
         updatedAt
@@ -410,7 +410,7 @@ export const attachmentsByTaskIdAndId = /* GraphQL */ `
       items {
         id
         taskId
-        fileUrl
+        filePath
         fileType
         createdAt
         updatedAt

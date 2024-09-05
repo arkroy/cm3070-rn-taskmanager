@@ -67,7 +67,7 @@ type Attachment @model @auth(rules: [
   id: ID
   task: Task @belongsTo(fields: ["taskId"])
   taskId: ID! @index(name: "byTask", sortKeyFields: ["id"])
-  fileUrl: String!
+  filePath: String
   fileType: String!
 }
 

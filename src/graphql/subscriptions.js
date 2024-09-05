@@ -460,7 +460,7 @@ export const onCreateAttachment = /* GraphQL */ `
         __typename
       }
       taskId
-      fileUrl
+      filePath
       fileType
       createdAt
       updatedAt
@@ -496,7 +496,7 @@ export const onUpdateAttachment = /* GraphQL */ `
         __typename
       }
       taskId
-      fileUrl
+      filePath
       fileType
       createdAt
       updatedAt
@@ -532,7 +532,7 @@ export const onDeleteAttachment = /* GraphQL */ `
         __typename
       }
       taskId
-      fileUrl
+      filePath
       fileType
       createdAt
       updatedAt

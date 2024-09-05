@@ -33,13 +33,12 @@ function LoginScreen({ navigation }) {
   
       if (user) {
         // Assuming user is successfully signed in, fetch the current session
-        const session = await Auth.currentSession();
-        const token = session.getIdToken().getJwtToken();
+        // const session = await Auth.currentSession();
+        // const token = session.getIdToken().getJwtToken();
   
         // Store the user details and token in the reactive variable
         userVar({
           ...user.attributes,
-          token,
         });
   
         // Update the authentication state in the reactive variable

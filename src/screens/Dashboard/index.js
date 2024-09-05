@@ -21,6 +21,13 @@ const LIST_TASKS = gql`
         createdAt
         updatedAt
         owner
+        attachments {
+          items {
+            id
+            filePath  # Update to use 'filePath'
+            fileType
+          }
+        }
         __typename
       }
       nextToken

@@ -1,0 +1,14 @@
+{
+  "resourceName": "taskAttachments",
+  "policyUUID": "38181daf",
+  "bucketName": "taskmanagerapp5f00dc1cfe044cb982279195db50fd86",
+  "storageAccess": "auth",
+  "guestAccess": [],
+  "authAccess": [
+    "CREATE_AND_UPDATE",
+    "READ",
+    "DELETE"
+  ],
+  "triggerFunction": "NONE",
+  "groupAccess": {}
+}
