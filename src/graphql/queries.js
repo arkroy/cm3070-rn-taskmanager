@@ -72,6 +72,7 @@ export const getTask = /* GraphQL */ `
         nextToken
         __typename
       }
+      status
       user {
         id
         fullName
@@ -112,6 +113,7 @@ export const listTasks = /* GraphQL */ `
         type
         cost
         notes
+        status
         userId
         createdAt
         updatedAt
@@ -153,6 +155,7 @@ export const tasksByUserIdAndId = /* GraphQL */ `
         type
         cost
         notes
+        status
         userId
         createdAt
         updatedAt
@@ -181,6 +184,7 @@ export const getVoiceNote = /* GraphQL */ `
         type
         cost
         notes
+        status
         userId
         createdAt
         updatedAt
@@ -265,6 +269,7 @@ export const getChecklistItem = /* GraphQL */ `
         type
         cost
         notes
+        status
         userId
         createdAt
         updatedAt
@@ -352,6 +357,7 @@ export const getAttachment = /* GraphQL */ `
         type
         cost
         notes
+        status
         userId
         createdAt
         updatedAt

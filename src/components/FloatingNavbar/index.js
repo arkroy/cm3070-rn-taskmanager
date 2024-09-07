@@ -27,7 +27,7 @@ const FloatingNavBar = () => {
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    bottom: '1em',
+    bottom: 60,
     left: 0,
     right: 0,
     height: 60,

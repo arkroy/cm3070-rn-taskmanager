@@ -1,8 +1,10 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Button, Platform } from 'react-native';
 import { useQuery, gql } from '@apollo/client';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import FloatingNavBar from '../../components/FloatingNavbar';
-import { currentTaskVar } from '../../utils/apolloState'; // Import the reactive variable
+import { currentTaskVar } from '../../utils/apolloState';
+import moment from 'moment'; // For date formatting
 
 const LIST_TASKS = gql`
   query ListTasks($filter: ModelTaskFilterInput, $limit: Int, $nextToken: String) {
@@ -24,7 +26,7 @@ const LIST_TASKS = gql`
         attachments {
           items {
             id
-            filePath  # Update to use 'filePath'
+            filePath
             fileType
           }
         }
@@ -37,7 +39,18 @@ const LIST_TASKS = gql`
 `;
 
 function DashboardScreen({ navigation }) {
-  const { data, loading, error } = useQuery(LIST_TASKS);
+  const [selectedDate, setSelectedDate] = useState(new Date()); // State to hold the selected date
+  const [showDatePicker, setShowDatePicker] = useState(false); // State to control the visibility of the date picker
+
+  // Filter to get tasks for the selected date
+  const filter = {
+    date: {
+      eq: moment(selectedDate).format('YYYY-MM-DD'), // Filter tasks by selected date
+    },
+  };
+
+  // Run the GraphQL query with the selected date filter
+  const { data, loading, error } = useQuery(LIST_TASKS, { variables: { filter } });
 
   if (loading) return <Text>Loading...</Text>;
   if (error) return <Text>Error loading tasks: {error.message}</Text>;
@@ -62,13 +75,40 @@ function DashboardScreen({ navigation }) {
     </TouchableOpacity>
   );
 
+  // Handle the date change from the picker
+  const handleDateChange = (event, date) => {
+    setShowDatePicker(false); // Close the date picker
+    if (date) setSelectedDate(date); // Update the selected date
+  };
+
   return (
     <View style={styles.container}>
+      {/* Date Picker Button */}
+      <View style={styles.datePickerContainer}>
+        <Button
+          title={`Filter by Date: ${moment(selectedDate).format('YYYY-MM-DD')}`}
+          onPress={() => setShowDatePicker(true)} // Show the date picker when the button is pressed
+        />
+      </View>
+
+      {/* Date Picker Modal */}
+      {showDatePicker && (
+        <DateTimePicker
+          value={selectedDate}
+          mode="date"
+          display={Platform.OS === 'ios' ? 'inline' : 'default'}
+          onChange={handleDateChange}
+        />
+      )}
+
+      {/* Task List */}
       <FlatList
-        data={data.listTasks.items}
+        data={data?.listTasks?.items || []}
         renderItem={renderTask}
         keyExtractor={(task) => task.id}
       />
+
+      {/* Floating Navigation Bar */}
       <FloatingNavBar />
     </View>
   );
@@ -79,6 +119,9 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
     backgroundColor: '#f8f8f8',
+  },
+  datePickerContainer: {
+    marginBottom: 10,
   },
   card: {
     backgroundColor: '#fff',

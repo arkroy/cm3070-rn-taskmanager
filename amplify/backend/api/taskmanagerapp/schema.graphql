@@ -32,6 +32,7 @@ type Task @model @auth(rules: [
   voiceNotes: [VoiceNote] @hasMany(indexName: "byTask", fields: ["id"])
   checklist: [ChecklistItem] @hasMany(indexName: "byTask", fields: ["id"])
   attachments: [Attachment] @hasMany(indexName: "byTask", fields: ["id"])
+  status: TaskStatus!
   user: User @belongsTo(fields: ["userId"])
   userId: ID! @index(name: "byUser", sortKeyFields: ["id"])
 }
@@ -74,6 +75,11 @@ type Attachment @model @auth(rules: [
 enum TaskType {
   PROFESSIONAL
   PERSONAL
+}
+
+enum TaskStatus {   # New enum for task completion status
+  COMPLETE
+  INCOMPLETE
 }
 
 enum UnitOfMeasurement {

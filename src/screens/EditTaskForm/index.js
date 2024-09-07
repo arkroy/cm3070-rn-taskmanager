@@ -1,59 +1,17 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, Switch, TouchableOpacity, StyleSheet, Alert, Platform, FlatList, Image, TouchableHighlight, KeyboardAvoidingView } from 'react-native';
-import moment from 'moment'; // Using moment for date formatting
-import { useReactiveVar, useMutation, gql } from '@apollo/client';
+import { KeyboardAvoidingView, FlatList, StyleSheet, Button, Alert, Platform } from 'react-native';
+import { useReactiveVar, useMutation } from '@apollo/client';
 import { currentTaskVar, userVar } from '../../utils/apolloState';
-import * as ImagePicker from 'expo-image-picker';
-import PlacesInput from '../../components/PlacesInput';
-
-// Define the create and update task mutations
-const CREATE_TASK = gql`
-  mutation CreateTask($input: CreateTaskInput!) {
-    createTask(input: $input) {
-      id
-      title
-      date
-      startTime
-      endTime
-      location
-      latitude
-      longitude
-      type
-      notes
-    }
-  }
-`;
-
-const UPDATE_TASK = gql`
-  mutation UpdateTask($input: UpdateTaskInput!) {
-    updateTask(input: $input) {
-      id
-      title
-      date
-      startTime
-      endTime
-      location
-      latitude
-      longitude
-      type
-      notes
-    }
-  }
-`;
-
-// Mutation to create an attachment
-const CREATE_ATTACHMENT = gql`
-  mutation CreateAttachment($input: CreateAttachmentInput!) {
-    createAttachment(input: $input) {
-      id
-      filePath
-      fileType
-    }
-  }
-`;
+import { CREATE_TASK, UPDATE_TASK, CREATE_ATTACHMENT } from '../../utils/gqlMutations';
+import TaskFormFields from '../../components/TaskFormFields';
+import AttachmentsSection from '../../components/Attachements';
+import VoiceInput from '../../components/VoiceInput';
+import { Audio } from 'expo-av';
+import { fileToBase64 } from '../../utils/audioUtils';
+import moment from 'moment';
 
 const EditTaskForm = ({ navigation }) => {
-  const currentTask = useReactiveVar(currentTaskVar); // Get the current task if it's an edit operation
+  const currentTask = useReactiveVar(currentTaskVar);
 
   // Define state variables
   const [title, setTitle] = useState(currentTask?.title || '');
@@ -66,43 +24,21 @@ const EditTaskForm = ({ navigation }) => {
   const [longitude, setLongitude] = useState(currentTask?.longitude || null);
   const [notes, setNotes] = useState(currentTask?.notes || '');
   const [attachments, setAttachments] = useState(currentTask?.attachments?.items.map(item => item.filePath) || []);
+  const [recording, setRecording] = useState(null);
+  const [playbackUri, setPlaybackUri] = useState(null);
 
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showStartTimePicker, setShowStartTimePicker] = useState(false);
   const [showEndTimePicker, setShowEndTimePicker] = useState(false);
 
-  // Define mutation hooks for creating and updating a task
-  const [createTask] = useMutation(CREATE_TASK, {
-    onCompleted: async (data) => {
-      console.log("Create task completed:", data.createTask.id);
-      await handleAttachments(data.createTask.id); // Pass the newly created task's ID to handleAttachments
-      Alert.alert("Task Created", "Your task has been created successfully.");
-      navigation.goBack();
-    },
-    onError: (error) => {
-      console.error("Create task error:", error);
-      Alert.alert("Error", `Failed to create task: ${error.message}`);
-    },
-  });
-
-  const [updateTask] = useMutation(UPDATE_TASK, {
-    onCompleted: async (data) => {
-      console.log("Update task completed:", data.updateTask.id);
-      await handleAttachments(data.updateTask.id); // Pass the updated task's ID to handleAttachments
-      Alert.alert("Task Updated", "Your task has been updated successfully.");
-      navigation.goBack();
-    },
-    onError: (error) => {
-      console.error("Update task error:", error);
-      Alert.alert("Error", `Failed to update task: ${error.message}`);
-    },
-  });
-
-  // Mutation hook to create an attachment
+  // Mutations
+  const [createTask] = useMutation(CREATE_TASK);
+  const [updateTask] = useMutation(UPDATE_TASK);
   const [createAttachment] = useMutation(CREATE_ATTACHMENT);
 
-  // Handle image picking
-  const pickImage = async () => {
+  // Image handling functions (same as original)
+   // Handle image picking
+   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.All,
       allowsEditing: true,
@@ -125,15 +61,135 @@ const EditTaskForm = ({ navigation }) => {
       setAttachments([...attachments, result.uri]);
     }
   };
-
-  // Handle removing an attachment
+  // Remove Attachments
   const removeAttachment = (uri) => {
     setAttachments(attachments.filter((attachment) => attachment !== uri));
   };
 
-  // Handle form submission (saving task)
+  
 
-  const handleSubmit = () => {
+  // Voice recording functions (same as original)
+
+  const startRecording = async () => {
+    try {
+      const { granted } = await Audio.requestPermissionsAsync();
+      if (!granted) {
+        Alert.alert('Permission to access microphone was denied.');
+        return;
+      }
+  
+      const { recording } = await Audio.Recording.createAsync({
+        android: {
+          extension: '.wav',
+          outputFormat: Audio.RECORDING_OPTION_ANDROID_OUTPUT_FORMAT_DEFAULT,
+          audioEncoder: Audio.RECORDING_OPTION_ANDROID_AUDIO_ENCODER_PCM_16BIT,
+          sampleRate: 16000,
+          numberOfChannels: 1,
+          bitRate: 128000,
+        },
+        ios: {
+          extension: '.wav',
+          audioQuality: Audio.RECORDING_OPTION_IOS_AUDIO_QUALITY_HIGH,
+          sampleRate: 16000,
+          numberOfChannels: 1,
+          bitRate: 128000,
+          linearPCMBitDepth: 16,
+          linearPCMIsBigEndian: false,
+          linearPCMIsFloat: false,
+        },
+      });
+      setRecording(recording);
+    } catch (err) {
+      console.error('Failed to start recording', err);
+    }
+  };
+
+  const stopRecording = async () => {
+    try {
+      await recording.stopAndUnloadAsync(); // Stop and unload the recording
+      const uri = recording.getURI(); // Get the URI of the audio file
+      const status = await recording.getStatusAsync(); // Get recording status (duration)
+      setPlaybackUri(uri); // Set the URI for playback
+  
+      console.log('Recording saved at:', uri);
+      console.log('Recording duration (ms):', status.durationMillis);
+  
+      if (status.durationMillis < 2000) {
+        Alert.alert('Recording too short', 'Please record for at least 2 seconds.');
+        return;
+      }
+  
+      await processAudioForTranscription(uri); // Process the audio file for transcription
+    } catch (error) {
+      console.error('Failed to stop recording', error);
+    }
+  };
+
+  const playRecording = async () => {
+    try {
+      const { sound } = await Audio.Sound.createAsync(
+        { uri: playbackUri },
+        { shouldPlay: true }
+      );
+      await sound.playAsync();
+    } catch (error) {
+      console.error('Failed to play recording:', error);
+    }
+  };
+
+  const processAudioForTranscription = async (uri) => {
+    try {
+      const base64Audio = await fileToBase64(uri); // Convert the audio file to base64
+      if (!base64Audio) {
+        console.error('Error: Base64 audio is null');
+        Alert.alert('Error', 'Failed to convert audio to base64.');
+        return;
+      }
+  
+      const googleResponse = await fetch(
+        `https://speech.googleapis.com/v1/speech:recognize?key=YOUR_GOOGLE_CLOUD_API_KEY`,
+        {
+          method: 'POST',
+          headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            config: {
+              encoding: 'LINEAR16',
+              sampleRateHertz: 16000,
+              languageCode: 'en-US',
+            },
+            audio: {
+              content: base64Audio,
+            },
+          }),
+        }
+      );
+  
+      const result = await googleResponse.json();
+      console.log('Google Cloud Speech API Response:', result);
+  
+      if (result.results && result.results[0]) {
+        const alternatives = result.results[0].alternatives;
+        if (alternatives && alternatives[0].transcript) {
+          const transcript = alternatives[0].transcript;
+          console.log('Transcript:', transcript);
+          setNotes((prevNotes) => `${prevNotes} ${transcript}`); // Append the transcript to the notes field
+        } else {
+          Alert.alert('Transcription failed', 'No transcript found in the response.');
+        }
+      } else {
+        Alert.alert('Transcription failed', 'Could not recognize the audio.');
+      }
+    } catch (error) {
+      console.error('Failed to transcribe audio:', error);
+      Alert.alert('Error', 'Failed to transcribe the audio.');
+    }
+  };
+
+  // Form submission logic (same as original)
+  const handleSubmit = async () => {
     if (!title) {
       Alert.alert("Error", "Title is mandatory");
       return;
@@ -150,13 +206,14 @@ const EditTaskForm = ({ navigation }) => {
       Alert.alert("Error", "User not authenticated");
       return;
     }
-    const userId = user.sub; // This should be the user's ID (e.g., from Cognito)
+    const userId = user.sub;
   
     // Format the date using moment for AWSDate type
     const formattedDate = moment(date).format('YYYY-MM-DD');
     const formattedStartTime = moment(startTime).toISOString();
     const formattedEndTime = moment(endTime).toISOString();
   
+    // Task input with status set to INCOMPLETE by default
     const taskInput = {
       title,
       date: formattedDate,
@@ -167,175 +224,105 @@ const EditTaskForm = ({ navigation }) => {
       longitude,
       type: isPersonal ? 'PERSONAL' : 'PROFESSIONAL',
       notes,
-      userId, // Add the userId from userVar
+      status: 'INCOMPLETE', // New task is always INCOMPLETE
+      userId, // Add user ID from userVar
     };
   
     console.log("Task input:", taskInput);
   
-    if (currentTask) {
-      updateTask({ variables: { input: { ...taskInput, id: currentTask.id } } });
-    } else {
-      createTask({ variables: { input: taskInput } });
+    try {
+      if (currentTask) {
+        // Update existing task
+        await updateTask({
+          variables: {
+            input: { ...taskInput, id: currentTask.id },
+          },
+        });
+        Alert.alert("Success", "Task updated successfully.");
+      } else {
+        // Create new task
+        const { data } = await createTask({
+          variables: {
+            input: taskInput,
+          },
+        });
+        const taskId = data?.createTask?.id;
+  
+        // Handle attachments after task creation
+        await handleAttachments(taskId);
+  
+        Alert.alert("Success", "Task created successfully.");
+      }
+      navigation.goBack();
+    } catch (error) {
+      console.error("Error saving task:", error);
+      Alert.alert("Error", `Failed to save task: ${error.message}`);
     }
   };
 
-  // Handle attaching images to the task after it's created/updated
-  const handleAttachments = async (taskId) => {
-    if (!taskId) {
-      console.error("Task ID is null, cannot create attachments.");
-      return;
-    }
+// Handle attaching images to the task after it's created/updated
+const handleAttachments = async (taskId) => {
+  if (!taskId) {
+    console.error("Task ID is null, cannot create attachments.");
+    return;
+  }
 
-    console.log("Handling attachments for task:", taskId);
-
-    for (let attachment of attachments) {
-      if (attachment) {
-        try {
-          await createAttachment({
-            variables: {
-              input: {
-                taskId, // Pass the task ID to link the attachment
-                filePath: attachment,
-                fileType: "image",
-              },
+  for (let attachment of attachments) {
+    if (attachment) {
+      try {
+        await createAttachment({
+          variables: {
+            input: {
+              taskId, // Link the attachment to the task
+              filePath: attachment,
+              fileType: "image",
             },
-          });
-          console.log("Attachment created:", attachment);
-        } catch (error) {
-          console.error("Failed to create attachment:", error);
-        }
+          },
+        });
+      } catch (error) {
+        console.error("Failed to create attachment:", error);
       }
     }
-  };
-
-  // Handle setting location and coordinates from Google Places
-  const handleLocationSelect = (formattedAddress, details) => {
-    setLocation(formattedAddress);
-    if (details?.geometry) {
-      setLatitude(details.geometry.location.lat);
-      setLongitude(details.geometry.location.lng);
-    }
-  };
+  }
+};
 
   return (
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={100} // Adjust based on your UI
+      keyboardVerticalOffset={100}
     >
       <FlatList
         data={[{ key: 'form' }]}
         renderItem={() => (
           <>
-            <Text style={styles.label}>Title (Mandatory)</Text>
-            <TextInput
-              style={styles.input}
-              value={title}
-              onChangeText={setTitle}
-              placeholder="Enter task title"
+            <TaskFormFields
+              title={title} setTitle={setTitle}
+              date={date} setDate={setDate}
+              startTime={startTime} setStartTime={setStartTime}
+              endTime={endTime} setEndTime={setEndTime}
+              isPersonal={isPersonal} setIsPersonal={setIsPersonal}
+              showDatePicker={showDatePicker} setShowDatePicker={setShowDatePicker}
+              showStartTimePicker={showStartTimePicker} setShowStartTimePicker={setShowStartTimePicker}
+              showEndTimePicker={showEndTimePicker} setShowEndTimePicker={setShowEndTimePicker}
             />
 
-            <Text style={styles.label}>Date (Mandatory)</Text>
-            <TouchableOpacity onPress={() => setShowDatePicker(true)} style={styles.datePicker}>
-              <Text>{moment(date).format('YYYY-MM-DD')}</Text>
-            </TouchableOpacity>
-            {showDatePicker && (
-              <DateTimePicker
-                value={date}
-                mode="date"
-                minimumDate={new Date()}
-                display="default"
-                onChange={(event, selectedDate) => {
-                  setShowDatePicker(false);
-                  if (selectedDate) setDate(selectedDate);
-                }}
-              />
-            )}
-
-            <Text style={styles.label}>Start Time (Mandatory)</Text>
-            <TouchableOpacity onPress={() => setShowStartTimePicker(true)} style={styles.datePicker}>
-              <Text>{startTime.toLocaleTimeString()}</Text>
-            </TouchableOpacity>
-            {showStartTimePicker && (
-              <DateTimePicker
-                value={startTime}
-                mode="time"
-                display="default"
-                onChange={(event, selectedTime) => {
-                  setShowStartTimePicker(false);
-                  if (selectedTime) setStartTime(selectedTime);
-                }}
-              />
-            )}
-
-            <Text style={styles.label}>End Time (Mandatory)</Text>
-            <TouchableOpacity onPress={() => setShowEndTimePicker(true)} style={styles.datePicker}>
-              <Text>{endTime.toLocaleTimeString()}</Text>
-            </TouchableOpacity>
-            {showEndTimePicker && (
-              <DateTimePicker
-                value={endTime}
-                mode="time"
-                display="default"
-                onChange={(event, selectedTime) => {
-                  setShowEndTimePicker(false);
-                  if (selectedTime) setEndTime(selectedTime);
-                }}
-              />
-            )}
-
-            <Text style={styles.label}>Personal/Professional</Text>
-            <View style={styles.switchContainer}>
-              <Text>{isPersonal ? 'Personal' : 'Professional'}</Text>
-              <Switch
-                value={isPersonal}
-                onValueChange={(value) => setIsPersonal(value)}
-              />
-            </View>
-
-            <Text style={styles.label}>Location (Optional)</Text>
-            <View style={styles.placesInputWrapper}>
-              <PlacesInput
-                placeholder="Search for a location"
-                onLocationSelect={(location) => handleLocationSelect(location)}
-              />
-            </View>
-
-            <Text style={styles.label}>Notes (Optional)</Text>
-            <TextInput
-              style={[styles.input, styles.textArea]}
-              value={notes}
-              onChangeText={setNotes}
-              placeholder="Enter additional notes"
-              multiline
-              numberOfLines={4}
+            <AttachmentsSection
+              attachments={attachments}
+              pickImage={pickImage}
+              takePicture={takePicture}
+              removeAttachment={removeAttachment}
             />
 
-            <Text style={styles.label}>Attachments</Text>
-            <View style={styles.attachmentsContainer}>
-              <Button title="Pick Image" onPress={pickImage} />
-              <Button title="Take Picture" onPress={takePicture} />
-              <FlatList
-                horizontal
-                data={attachments}
-                renderItem={({ item, index }) => (
-                  <View key={index} style={styles.attachmentWrapper}>
-                    <Image source={{ uri: item }} style={styles.attachmentImage} />
-                    <TouchableHighlight
-                      style={styles.removeButton}
-                      onPress={() => removeAttachment(item)}
-                    >
-                      <Text style={styles.removeButtonText}>X</Text>
-                    </TouchableHighlight>
-                  </View>
-                )}
-                keyExtractor={(item, index) => `${item}-${index}`}
-              />
-            </View>
+            <VoiceInput
+              recording={recording}
+              startRecording={startRecording}
+              stopRecording={stopRecording}
+              playRecording={playRecording}
+              playbackUri={playbackUri}
+            />
 
-            <View style={styles.buttonContainer}>
-              <Button title="Save Task" onPress={handleSubmit} />
-            </View>
+            <Button title="Save Task" onPress={handleSubmit} />
           </>
         )}
         keyExtractor={(item) => item.key}
@@ -349,66 +336,6 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
     backgroundColor: '#f8f8f8',
-  },
-  placesInputWrapper: {
-    height: 200, // Set a fixed height for PlacesInput
-  },
-  label: {
-    fontSize: 16,
-    marginBottom: 5,
-  },
-  input: {
-    backgroundColor: '#fff',
-    borderColor: '#ddd',
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 20,
-  },
-  textArea: {
-    height: 100,
-  },
-  datePicker: {
-    backgroundColor: '#fff',
-    borderColor: '#ddd',
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 20,
-  },
-  switchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-  },
-  attachmentsContainer: {
-    marginBottom: 20,
-  },
-  attachmentWrapper: {
-    position: 'relative',
-  },
-  attachmentImage: {
-    width: 100,
-    height: 100,
-    marginRight: 10,
-    borderRadius: 8,
-  },
-  removeButton: {
-    position: 'absolute',
-    top: 5,
-    right: 5,
-    backgroundColor: 'red',
-    borderRadius: 50,
-    padding: 5,
-  },
-  removeButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-  buttonContainer: {
-    marginTop: 20,
-    marginBottom: 40, // Add margin for the button to always be visible
   },
 });
 

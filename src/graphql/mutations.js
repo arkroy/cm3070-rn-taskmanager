@@ -100,6 +100,7 @@ export const createTask = /* GraphQL */ `
         nextToken
         __typename
       }
+      status
       user {
         id
         fullName
@@ -150,6 +151,7 @@ export const updateTask = /* GraphQL */ `
         nextToken
         __typename
       }
+      status
       user {
         id
         fullName
@@ -200,6 +202,7 @@ export const deleteTask = /* GraphQL */ `
         nextToken
         __typename
       }
+      status
       user {
         id
         fullName
@@ -240,6 +243,7 @@ export const createVoiceNote = /* GraphQL */ `
         type
         cost
         notes
+        status
         userId
         createdAt
         updatedAt
@@ -275,6 +279,7 @@ export const updateVoiceNote = /* GraphQL */ `
         type
         cost
         notes
+        status
         userId
         createdAt
         updatedAt
@@ -310,6 +315,7 @@ export const deleteVoiceNote = /* GraphQL */ `
         type
         cost
         notes
+        status
         userId
         createdAt
         updatedAt
@@ -345,6 +351,7 @@ export const createChecklistItem = /* GraphQL */ `
         type
         cost
         notes
+        status
         userId
         createdAt
         updatedAt
@@ -381,6 +388,7 @@ export const updateChecklistItem = /* GraphQL */ `
         type
         cost
         notes
+        status
         userId
         createdAt
         updatedAt
@@ -417,6 +425,7 @@ export const deleteChecklistItem = /* GraphQL */ `
         type
         cost
         notes
+        status
         userId
         createdAt
         updatedAt
@@ -453,6 +462,7 @@ export const createAttachment = /* GraphQL */ `
         type
         cost
         notes
+        status
         userId
         createdAt
         updatedAt
@@ -489,6 +499,7 @@ export const updateAttachment = /* GraphQL */ `
         type
         cost
         notes
+        status
         userId
         createdAt
         updatedAt
@@ -525,6 +536,7 @@ export const deleteAttachment = /* GraphQL */ `
         type
         cost
         notes
+        status
         userId
         createdAt
         updatedAt
