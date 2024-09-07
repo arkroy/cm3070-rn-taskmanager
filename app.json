@@ -13,7 +13,11 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.arkroy.TaskManagerApp"
+      "bundleIdentifier": "com.arkroy.TaskManagerApp",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "This app requires access to your location to show the distance to tasks.",
+        "NSLocationAlwaysUsageDescription": "This app needs to access your location to provide location-based features."
+      }
     },
     "android": {
       "adaptiveIcon": {

@@ -32,7 +32,9 @@ type Task @model @auth(rules: [
   voiceNotes: [VoiceNote] @hasMany(indexName: "byTask", fields: ["id"])
   checklist: [ChecklistItem] @hasMany(indexName: "byTask", fields: ["id"])
   attachments: [Attachment] @hasMany(indexName: "byTask", fields: ["id"])
-  status: TaskStatus!
+  status: TaskStatus!     # Task status (INCOMPLETE, COMPLETE)
+  actualDuration: Float    # Actual time spent on task (in minutes)
+  plannedDuration: Float   # Planned task duration (in minutes)
   user: User @belongsTo(fields: ["userId"])
   userId: ID! @index(name: "byUser", sortKeyFields: ["id"])
 }
@@ -77,9 +79,10 @@ enum TaskType {
   PERSONAL
 }
 
-enum TaskStatus {   # New enum for task completion status
+enum TaskStatus {
   COMPLETE
   INCOMPLETE
+  INPROGRESS  # Added a status for when a task is ongoing
 }
 
 enum UnitOfMeasurement {

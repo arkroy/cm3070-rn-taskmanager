@@ -101,6 +101,8 @@ export const onCreateTask = /* GraphQL */ `
         __typename
       }
       status
+      actualDuration
+      plannedDuration
       user {
         id
         fullName
@@ -152,6 +154,8 @@ export const onUpdateTask = /* GraphQL */ `
         __typename
       }
       status
+      actualDuration
+      plannedDuration
       user {
         id
         fullName
@@ -203,6 +207,8 @@ export const onDeleteTask = /* GraphQL */ `
         __typename
       }
       status
+      actualDuration
+      plannedDuration
       user {
         id
         fullName
@@ -244,6 +250,8 @@ export const onCreateVoiceNote = /* GraphQL */ `
         cost
         notes
         status
+        actualDuration
+        plannedDuration
         userId
         createdAt
         updatedAt
@@ -280,6 +288,8 @@ export const onUpdateVoiceNote = /* GraphQL */ `
         cost
         notes
         status
+        actualDuration
+        plannedDuration
         userId
         createdAt
         updatedAt
@@ -316,6 +326,8 @@ export const onDeleteVoiceNote = /* GraphQL */ `
         cost
         notes
         status
+        actualDuration
+        plannedDuration
         userId
         createdAt
         updatedAt
@@ -352,6 +364,8 @@ export const onCreateChecklistItem = /* GraphQL */ `
         cost
         notes
         status
+        actualDuration
+        plannedDuration
         userId
         createdAt
         updatedAt
@@ -389,6 +403,8 @@ export const onUpdateChecklistItem = /* GraphQL */ `
         cost
         notes
         status
+        actualDuration
+        plannedDuration
         userId
         createdAt
         updatedAt
@@ -426,6 +442,8 @@ export const onDeleteChecklistItem = /* GraphQL */ `
         cost
         notes
         status
+        actualDuration
+        plannedDuration
         userId
         createdAt
         updatedAt
@@ -463,6 +481,8 @@ export const onCreateAttachment = /* GraphQL */ `
         cost
         notes
         status
+        actualDuration
+        plannedDuration
         userId
         createdAt
         updatedAt
@@ -500,6 +520,8 @@ export const onUpdateAttachment = /* GraphQL */ `
         cost
         notes
         status
+        actualDuration
+        plannedDuration
         userId
         createdAt
         updatedAt
@@ -537,6 +559,8 @@ export const onDeleteAttachment = /* GraphQL */ `
         cost
         notes
         status
+        actualDuration
+        plannedDuration
         userId
         createdAt
         updatedAt

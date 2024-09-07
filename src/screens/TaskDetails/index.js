@@ -1,7 +1,10 @@
-import React from 'react';
-import { View, Text, StyleSheet, Image, FlatList, TouchableOpacity, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, Image, FlatList, TouchableOpacity, Alert, Linking, Platform } from 'react-native';
 import { useReactiveVar, useMutation, gql } from '@apollo/client';
+import * as Location from 'expo-location';
 import { currentTaskVar } from '../../utils/apolloState';
+import MapView, { Marker } from 'react-native-maps';
+import haversine from 'haversine-distance';
 
 // Define the deleteTask mutation locally
 const DELETE_TASK = gql`
@@ -15,6 +18,41 @@ const DELETE_TASK = gql`
 
 const TaskDetailsScreen = ({ navigation }) => {
   const task = useReactiveVar(currentTaskVar);
+  const [currentLocation, setCurrentLocation] = useState(null); // Device's current location
+  const [distance, setDistance] = useState(null); // Distance between device and task location
+  const [locationPermissionGranted, setLocationPermissionGranted] = useState(false); // Location permission status
+
+  // Fetch device's current location
+  useEffect(() => {
+    const fetchLocation = async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          setLocationPermissionGranted(false);
+          return;
+        }
+        setLocationPermissionGranted(true);
+        const location = await Location.getCurrentPositionAsync({});
+        setCurrentLocation(location.coords);
+      } catch (error) {
+        setLocationPermissionGranted(false); // In case of error, deny location access gracefully
+      }
+    };
+
+    fetchLocation();
+  }, []);
+
+  // Calculate the distance when both current location and task location are available
+  useEffect(() => {
+    if (currentLocation && task?.latitude && task?.longitude) {
+      const start = { latitude: currentLocation.latitude, longitude: currentLocation.longitude };
+      const end = { latitude: task.latitude, longitude: task.longitude };
+
+      const distanceInMeters = haversine(start, end); // Calculate the distance in meters
+      const distanceInKm = (distanceInMeters / 1000).toFixed(2); // Convert to kilometers
+      setDistance(distanceInKm);
+    }
+  }, [currentLocation, task]);
 
   // Define the mutation for deleting a task
   const [deleteTaskMutation] = useMutation(DELETE_TASK, {
@@ -31,17 +69,31 @@ const TaskDetailsScreen = ({ navigation }) => {
 
   const handleDelete = () => {
     if (task && task.id) {
-      // Ensure task.id is defined before attempting to delete
       deleteTaskMutation({
         variables: {
           input: {
-            id: task.id // Only pass the task ID in the input object
+            id: task.id
           }
         }
       });
     } else {
       Alert.alert("Error", "Task ID is not defined.");
     }
+  };
+
+  const handleOpenMaps = () => {
+    const scheme = Platform.select({
+      ios: 'maps:0,0?q=',
+      android: 'geo:0,0?q='
+    });
+    const latLng = `${task.latitude},${task.longitude}`;
+    const label = task.location;
+    const url = Platform.select({
+      ios: `${scheme}${label}@${latLng}`,
+      android: `${scheme}${latLng}(${label})`
+    });
+
+    Linking.openURL(url);
   };
 
   if (!task) {
@@ -64,6 +116,36 @@ const TaskDetailsScreen = ({ navigation }) => {
         <Text style={styles.type}>Type: {task.type}</Text>
         <Text style={styles.cost}>Cost: ${task.cost}</Text>
         <Text style={styles.notes}>Notes: {task.notes}</Text>
+
+        {/* Show the map if the task has latitude and longitude */}
+        {task.latitude && task.longitude && (
+          <View style={styles.mapContainer}>
+            <MapView
+              style={styles.map}
+              initialRegion={{
+                latitude: task.latitude,
+                longitude: task.longitude,
+                latitudeDelta: 0.01,
+                longitudeDelta: 0.01,
+              }}
+            >
+              <Marker
+                coordinate={{ latitude: task.latitude, longitude: task.longitude }}
+                title={task.location}
+              />
+            </MapView>
+            <TouchableOpacity style={styles.mapLink} onPress={handleOpenMaps}>
+              <Text style={styles.mapLinkText}>Open in Google Maps</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Display distance if available and location permission is granted */}
+        {locationPermissionGranted && distance && (
+          <Text style={styles.distance}>
+            Distance from current location: {distance} km
+          </Text>
+        )}
       </View>
 
       {task.attachments?.items?.length > 0 && (
@@ -140,6 +222,29 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 5,
     color: '#666',
+  },
+  mapContainer: {
+    height: 200,
+    borderRadius: 10,
+    overflow: 'hidden',
+    marginBottom: 15,
+  },
+  map: {
+    flex: 1,
+  },
+  mapLink: {
+    marginTop: 10,
+    alignItems: 'center',
+  },
+  mapLinkText: {
+    color: 'blue',
+    textDecorationLine: 'underline',
+  },
+  distance: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginTop: 10,
+    color: '#333',
   },
   attachmentsSection: {
     marginTop: 20,

@@ -9,16 +9,22 @@ function PlacesInput({ placeholder, onLocationSelect }) {
       <GooglePlacesAutocomplete
         placeholder={placeholder}
         minLength={2}
-        fetchDetails={true}
+        fetchDetails={true} // Important to get detailed location info
         onPress={(data, details = null) => {
-          // Extract location details here
           if (details) {
-            const location = details.formatted_address;
+            const location = {
+              address: details.formatted_address,
+              latitude: details.geometry.location.lat,
+              longitude: details.geometry.location.lng,
+            };
+            console.log("Location selected:", location);
             onLocationSelect(location);
+          } else {
+            console.error('No details available for selected location');
           }
         }}
         query={{
-          key: 'AIzaSyBARAPcaDbFUDfLo4WrfTfiXJzMxaExI0A',
+          key: 'AIzaSyBARAPcaDbFUDfLo4WrfTfiXJzMxaExI0A', // Replace with your actual Google API key
           language: 'en',
         }}
         styles={{

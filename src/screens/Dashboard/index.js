@@ -1,114 +1,83 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Button, Platform } from 'react-native';
-import { useQuery, gql } from '@apollo/client';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import FloatingNavBar from '../../components/FloatingNavbar';
+import React, { useState, useEffect } from 'react';
+import { View, FlatList, StyleSheet, Text } from 'react-native';
+import { useQuery } from '@apollo/client';
+import { LIST_TASKS } from '../../utils/schemas';
+import moment from 'moment';
 import { currentTaskVar } from '../../utils/apolloState';
-import moment from 'moment'; // For date formatting
-
-const LIST_TASKS = gql`
-  query ListTasks($filter: ModelTaskFilterInput, $limit: Int, $nextToken: String) {
-    listTasks(filter: $filter, limit: $limit, nextToken: $nextToken) {
-      items {
-        id
-        title
-        date
-        startTime
-        endTime
-        location
-        type
-        cost
-        notes
-        userId
-        createdAt
-        updatedAt
-        owner
-        attachments {
-          items {
-            id
-            filePath
-            fileType
-          }
-        }
-        __typename
-      }
-      nextToken
-      __typename
-    }
-  }
-`;
+import TaskList from '../../components/TaskList';
+import TimerCard from '../../components/TimeCard';
+import DateFilter from '../../components/DateFilter';
+import FloatingNavBar from '../../components/FloatingNavbar';
+import TaskFilters from '../../components/TaskFilters'; // Sub-category filters
 
 function DashboardScreen({ navigation }) {
-  const [selectedDate, setSelectedDate] = useState(new Date()); // State to hold the selected date
-  const [showDatePicker, setShowDatePicker] = useState(false); // State to control the visibility of the date picker
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [currentTask, setCurrentTask] = useState(null);
+  const [isTimerActive, setIsTimerActive] = useState(false);
+  const [startTimerTime, setStartTimerTime] = useState(null);
 
-  // Filter to get tasks for the selected date
+  const [taskTypeFilter, setTaskTypeFilter] = useState(null); // Type filter (Personal/Professional)
+  const [taskStatusFilter, setTaskStatusFilter] = useState(null); // Status filter (Complete/Pending)
+
   const filter = {
-    date: {
-      eq: moment(selectedDate).format('YYYY-MM-DD'), // Filter tasks by selected date
-    },
+    date: { eq: moment(selectedDate).format('YYYY-MM-DD') },
+    ...(taskTypeFilter && { type: { eq: taskTypeFilter } }),
+    ...(taskStatusFilter && { status: { eq: taskStatusFilter } }),
   };
 
-  // Run the GraphQL query with the selected date filter
   const { data, loading, error } = useQuery(LIST_TASKS, { variables: { filter } });
+
+  useEffect(() => {
+    if (data?.listTasks?.items) {
+      const currentTime = new Date();
+      const upcomingTask = data.listTasks.items
+        .filter(task => new Date(task.startTime) > currentTime)
+        .sort((a, b) => new Date(a.startTime) - new Date(b.startTime))[0];
+      setCurrentTask(upcomingTask || null);
+    }
+  }, [data]);
+
+  const handleTimerPress = (status, actualDuration, plannedDuration) => {
+    setIsTimerActive(status);
+    setStartTimerTime(status ? new Date() : null);
+  };
+
+  const handleTaskPress = (task) => {
+    currentTaskVar(task); // Store task in reactive variable
+    navigation.navigate('TaskDetails', { taskId: task.id });
+  };
 
   if (loading) return <Text>Loading...</Text>;
   if (error) return <Text>Error loading tasks: {error.message}</Text>;
 
-  const renderTask = ({ item: task }) => (
-    <TouchableOpacity
-      style={styles.card}
-      onPress={() => {
-        currentTaskVar(task); // Set the selected task in the reactive variable
-        navigation.navigate('TaskDetails'); // Navigate to TaskDetails screen
-      }}
-    >
-      <View style={styles.taskDetails}>
-        <Text style={styles.title}>{task.title}</Text>
-        <Text style={styles.time}>
-          {new Date(task.startTime).toLocaleTimeString()} -{' '}
-          {new Date(task.endTime).toLocaleTimeString()}
-        </Text>
-        <Text style={styles.location}>Location: {task.location}</Text>
-        <Text style={styles.cost}>Cost: ${task.cost}</Text>
-      </View>
-    </TouchableOpacity>
-  );
-
-  // Handle the date change from the picker
-  const handleDateChange = (event, date) => {
-    setShowDatePicker(false); // Close the date picker
-    if (date) setSelectedDate(date); // Update the selected date
-  };
-
   return (
     <View style={styles.container}>
-      {/* Date Picker Button */}
-      <View style={styles.datePickerContainer}>
-        <Button
-          title={`Filter by Date: ${moment(selectedDate).format('YYYY-MM-DD')}`}
-          onPress={() => setShowDatePicker(true)} // Show the date picker when the button is pressed
-        />
-      </View>
+      <TimerCard
+        currentTask={currentTask}
+        isTimerActive={isTimerActive}
+        startTimerTime={startTimerTime}
+        handleTimerPress={handleTimerPress}
+      />
 
-      {/* Date Picker Modal */}
-      {showDatePicker && (
-        <DateTimePicker
-          value={selectedDate}
-          mode="date"
-          display={Platform.OS === 'ios' ? 'inline' : 'default'}
-          onChange={handleDateChange}
-        />
-      )}
+      <DateFilter selectedDate={selectedDate} setSelectedDate={setSelectedDate} />
 
-      {/* Task List */}
+      {/* Sub-category Filters */}
+      <TaskFilters
+        taskTypeFilter={taskTypeFilter}
+        setTaskTypeFilter={setTaskTypeFilter}
+        taskStatusFilter={taskStatusFilter}
+        setTaskStatusFilter={setTaskStatusFilter}
+        tasks={data?.listTasks?.items || []}
+      />
+
       <FlatList
         data={data?.listTasks?.items || []}
-        renderItem={renderTask}
+        renderItem={({ item }) => (
+          <TaskList task={item} onPress={() => handleTaskPress(item)} />
+        )}
         keyExtractor={(task) => task.id}
       />
 
-      {/* Floating Navigation Bar */}
       <FloatingNavBar />
     </View>
   );
@@ -119,41 +88,6 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
     backgroundColor: '#f8f8f8',
-  },
-  datePickerContainer: {
-    marginBottom: 10,
-  },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    padding: 20,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 3,
-  },
-  taskDetails: {
-    flex: 1,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 5,
-  },
-  time: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 5,
-  },
-  location: {
-    fontSize: 14,
-    color: '#666',
-  },
-  cost: {
-    fontSize: 14,
-    color: '#666',
   },
 });
 

@@ -5,6 +5,7 @@ import * as ImagePicker from 'expo-image-picker';
 import SegmentedControl from '@react-native-segmented-control/segmented-control';
 import * as Auth from 'aws-amplify/auth';
 import styles from './registrationScreen.styles';
+import { createUser } from '../../graphql/mutations'
 
 function RegistrationScreen({ navigation }) {
   const [fullName, setFullName] = useState('');
@@ -38,6 +39,19 @@ function RegistrationScreen({ navigation }) {
           email,
           name: fullName,
           'custom:unit': selectedUnit === 0 ? 'Imperial' : 'Metric',
+        },
+      });
+
+      // After sign-up, create user in the backend
+      await createUser({
+        variables: {
+          input: {
+            id: result.userSub, // Use the Cognito userSub (unique user ID) for the User ID
+            fullName,
+            email,
+            profilePicture, // This is the profile picture URL (you might want to handle uploads separately)
+            unitOfMeasurement: selectedUnit === 0 ? 'IMPERIAL' : 'METRIC',
+          },
         },
       });
   

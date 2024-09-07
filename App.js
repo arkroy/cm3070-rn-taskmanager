@@ -16,6 +16,8 @@ import VerificationScreen from './src/screens/Verification';
 import AppHeader from './src/components/AppHeader';
 import TaskDetailsScreen from './src/screens/TaskDetails';
 import EditTaskForm from './src/screens/EditTaskForm';
+import SettingsScreen from './src/screens/Settings';
+import InsightsPage from './src/screens/Insights';
 
 const Stack = createStackNavigator();
 Amplify.configure(awsconfig);
@@ -24,6 +26,7 @@ export default function App() {
   const isAuthenticated = useReactiveVar(isAuthenticatedVar);
 
   useEffect(() => {
+
     const checkAuthStatus = async () => {
       try {
         const { accessToken, idToken } = (await fetchAuthSession()).tokens ?? {};
@@ -79,7 +82,18 @@ export default function App() {
                   header: () => <AppHeader screen="EditTaskForm" />,
                 }}
               />
-              {/* Add other authenticated screens here */}
+              <Stack.Screen 
+              name="Settings" component={SettingsScreen} 
+              options={{
+                header: () => <AppHeader screen="Settings" />,
+              }}
+              />
+              <Stack.Screen 
+              name="Insights" component={InsightsPage} 
+              options={{
+                header: () => <AppHeader screen="Insights" />,
+              }}
+              />
             </>
           ) : (
             <>

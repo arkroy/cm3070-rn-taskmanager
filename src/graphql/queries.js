@@ -73,6 +73,8 @@ export const getTask = /* GraphQL */ `
         __typename
       }
       status
+      actualDuration
+      plannedDuration
       user {
         id
         fullName
@@ -114,6 +116,8 @@ export const listTasks = /* GraphQL */ `
         cost
         notes
         status
+        actualDuration
+        plannedDuration
         userId
         createdAt
         updatedAt
@@ -156,6 +160,8 @@ export const tasksByUserIdAndId = /* GraphQL */ `
         cost
         notes
         status
+        actualDuration
+        plannedDuration
         userId
         createdAt
         updatedAt
@@ -185,6 +191,8 @@ export const getVoiceNote = /* GraphQL */ `
         cost
         notes
         status
+        actualDuration
+        plannedDuration
         userId
         createdAt
         updatedAt
@@ -270,6 +278,8 @@ export const getChecklistItem = /* GraphQL */ `
         cost
         notes
         status
+        actualDuration
+        plannedDuration
         userId
         createdAt
         updatedAt
@@ -358,6 +368,8 @@ export const getAttachment = /* GraphQL */ `
         cost
         notes
         status
+        actualDuration
+        plannedDuration
         userId
         createdAt
         updatedAt

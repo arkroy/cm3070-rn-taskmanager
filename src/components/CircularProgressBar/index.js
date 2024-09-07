@@ -1,46 +1,44 @@
-import React, { useState, useEffect } from 'react';
-import { View, TouchableOpacity, StyleSheet } from 'react-native';
+import React from 'react';
+import { TouchableOpacity, View, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { AnimatedCircularProgress } from 'react-native-circular-progress';
+import * as Progress from 'react-native-progress';
 
-const CircularProgressBar = ({ startTime, endTime }) => {
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [progress, setProgress] = useState(0);
-
-  useEffect(() => {
-    let interval;
-    if (isPlaying) {
-      interval = setInterval(() => {
-        const currentTime = new Date();
-        const totalDuration = endTime - startTime;
-        const elapsedTime = currentTime - startTime;
-        setProgress((elapsedTime / totalDuration) * 100);
-      }, 1000);
-    } else {
-      clearInterval(interval);
-    }
-    return () => clearInterval(interval);
-  }, [isPlaying, startTime, endTime]);
-
+const CircularProgressBar = ({ isTimerActive, onPress }) => {
   return (
-    <TouchableOpacity onPress={() => setIsPlaying(!isPlaying)}>
-      <AnimatedCircularProgress
+    <TouchableOpacity onPress={onPress} style={styles.progressContainer}>
+      {/* Indeterminate Circular Progress */}
+      <Progress.Circle
         size={120}
-        width={15}
-        fill={progress}
-        tintColor="#00e0ff"
-        backgroundColor="#3d5875"
-      >
-        {() => (
-          <Ionicons
-            name={isPlaying ? 'pause' : 'play'}
-            size={40}
-            color="white"
-          />
-        )}
-      </AnimatedCircularProgress>
+        thickness={5}
+        indeterminate={isTimerActive} // Show indeterminate loader when active
+        borderWidth={2}
+        color={isTimerActive ? '#00e0ff' : '#FF0000'} // Color based on play/pause state
+        borderColor="#3d5875"
+      />
+      
+      {/* Center Play/Pause Button */}
+      <View style={styles.iconWrapper}>
+        <Ionicons
+          name={isTimerActive ? 'pause' : 'play'} // Toggle play/pause icon
+          size={40}
+          color="white"
+        />
+      </View>
     </TouchableOpacity>
   );
 };
+
+const styles = StyleSheet.create({
+  progressContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative', // To position the button in the center
+  },
+  iconWrapper: {
+    position: 'absolute', // Center the button on top of the progress circle
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+});
 
 export default CircularProgressBar;
