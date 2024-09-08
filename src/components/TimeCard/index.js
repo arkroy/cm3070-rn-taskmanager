@@ -1,9 +1,30 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import moment from 'moment';
-import CircularProgressBar from '../CircularProgressBar';
 
 const TimerCard = ({ currentTask, isTimerActive, startTimerTime, handleTimerPress }) => {
+  const [progress, setProgress] = useState(0); // State for progress animation
+
+  useEffect(() => {
+    let interval = null;
+
+    if (isTimerActive && startTimerTime) {
+      interval = setInterval(() => {
+        const elapsedMinutes = moment().diff(startTimerTime, 'minutes');
+        const totalMinutes = moment(currentTask.endTime).diff(currentTask.startTime, 'minutes');
+        const progressValue = (elapsedMinutes / totalMinutes) * 100;
+        setProgress(Math.min(progressValue, 100)); // Ensure progress is capped at 100%
+      }, 1000);
+    } else {
+      setProgress(0);
+    }
+
+    return () => clearInterval(interval);
+  }, [isTimerActive, startTimerTime, currentTask]);
+
+  const buttonText = isTimerActive ? 'Stop' : 'Start';
+  const buttonColor = isTimerActive ? '#f44336' : '#4CAF50'; // Red for stop, green for start
+
   if (!currentTask) return null;
 
   const startTime = new Date(currentTask.startTime);
@@ -19,10 +40,12 @@ const TimerCard = ({ currentTask, isTimerActive, startTimerTime, handleTimerPres
       <Text style={styles.location}>Location: {currentTask.location}</Text>
       <Text style={styles.cost}>Cost: ${currentTask.cost}</Text>
 
-      <CircularProgressBar
-        progress={isTimerActive ? (moment().diff(startTimerTime, 'minutes') / totalMinutes) * 100 : 0}
-        onPress={() => handleTimerPress(!isTimerActive)}
-      />
+      <TouchableOpacity
+        onPress={() => handleTimerPress(!isTimerActive)} // Start/Stop the timer
+        style={[styles.button, { backgroundColor: buttonColor }]}
+      >
+        <Text style={styles.buttonText}>{buttonText}</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -50,6 +73,19 @@ const styles = StyleSheet.create({
   cost: {
     fontSize: 14,
     color: '#666',
+  },
+  button: {
+    marginTop: 15,
+    padding: 10,
+    borderRadius: 5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '50%',
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 

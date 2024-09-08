@@ -5,6 +5,7 @@ import * as Location from 'expo-location';
 import { currentTaskVar } from '../../utils/apolloState';
 import MapView, { Marker } from 'react-native-maps';
 import haversine from 'haversine-distance';
+import { UPDATE_TASK } from '../../utils/schemas';
 
 // Define the deleteTask mutation locally
 const DELETE_TASK = gql`
@@ -18,38 +19,40 @@ const DELETE_TASK = gql`
 
 const TaskDetailsScreen = ({ navigation }) => {
   const task = useReactiveVar(currentTaskVar);
-  const [currentLocation, setCurrentLocation] = useState(null); // Device's current location
-  const [distance, setDistance] = useState(null); // Distance between device and task location
-  const [locationPermissionGranted, setLocationPermissionGranted] = useState(false); // Location permission status
+  const [currentLocation, setCurrentLocation] = useState(null);
+  const [distance, setDistance] = useState(null);
+  const [locationPermissionGranted, setLocationPermissionGranted] = useState(false);
 
-  // Fetch device's current location
+  // Fetch device's current location (only for Android)
   useEffect(() => {
     const fetchLocation = async () => {
-      try {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') {
+      if (Platform.OS === 'android') {
+        try {
+          const { status } = await Location.requestForegroundPermissionsAsync();
+          if (status !== 'granted') {
+            setLocationPermissionGranted(false);
+            return;
+          }
+          setLocationPermissionGranted(true);
+          const location = await Location.getCurrentPositionAsync({});
+          setCurrentLocation(location.coords);
+        } catch (error) {
           setLocationPermissionGranted(false);
-          return;
         }
-        setLocationPermissionGranted(true);
-        const location = await Location.getCurrentPositionAsync({});
-        setCurrentLocation(location.coords);
-      } catch (error) {
-        setLocationPermissionGranted(false); // In case of error, deny location access gracefully
       }
     };
 
     fetchLocation();
   }, []);
 
-  // Calculate the distance when both current location and task location are available
+  // Calculate the distance when both current location and task location are available (only for Android)
   useEffect(() => {
-    if (currentLocation && task?.latitude && task?.longitude) {
+    if (Platform.OS === 'android' && currentLocation && task?.latitude && task?.longitude) {
       const start = { latitude: currentLocation.latitude, longitude: currentLocation.longitude };
       const end = { latitude: task.latitude, longitude: task.longitude };
 
-      const distanceInMeters = haversine(start, end); // Calculate the distance in meters
-      const distanceInKm = (distanceInMeters / 1000).toFixed(2); // Convert to kilometers
+      const distanceInMeters = haversine(start, end);
+      const distanceInKm = (distanceInMeters / 1000).toFixed(2);
       setDistance(distanceInKm);
     }
   }, [currentLocation, task]);
@@ -62,10 +65,12 @@ const TaskDetailsScreen = ({ navigation }) => {
       ]);
     },
     onError: (error) => {
-      console.error("Error deleting task:", error); // Log detailed error
+      console.error("Error deleting task:", error);
       Alert.alert("Error", `Failed to delete task: ${error.message}`);
     }
   });
+
+  const [updateTask] = useMutation(UPDATE_TASK);
 
   const handleDelete = () => {
     if (task && task.id) {
@@ -78,6 +83,29 @@ const TaskDetailsScreen = ({ navigation }) => {
       });
     } else {
       Alert.alert("Error", "Task ID is not defined.");
+    }
+  };
+
+  const handleStartTask = async () => {
+    try {
+      // Update the task's status to INPROGRESS
+      await updateTask({
+        variables: {
+          input: {
+            id: task.id,
+            status: 'INPROGRESS',
+          },
+        },
+      });
+
+      // Set the current task in the reactive variable
+      currentTaskVar(task);
+
+      // Navigate back to the Dashboard and start the timer
+      navigation.navigate('Dashboard', { startTimerForTask: task });
+    } catch (error) {
+      console.error('Error starting task:', error);
+      Alert.alert('Error', 'Failed to start the task.');
     }
   };
 
@@ -117,7 +145,6 @@ const TaskDetailsScreen = ({ navigation }) => {
         <Text style={styles.cost}>Cost: ${task.cost}</Text>
         <Text style={styles.notes}>Notes: {task.notes}</Text>
 
-        {/* Show the map if the task has latitude and longitude */}
         {task.latitude && task.longitude && (
           <View style={styles.mapContainer}>
             <MapView
@@ -140,8 +167,7 @@ const TaskDetailsScreen = ({ navigation }) => {
           </View>
         )}
 
-        {/* Display distance if available and location permission is granted */}
-        {locationPermissionGranted && distance && (
+        {Platform.OS === 'android' && locationPermissionGranted && distance && (
           <Text style={styles.distance}>
             Distance from current location: {distance} km
           </Text>
@@ -167,6 +193,11 @@ const TaskDetailsScreen = ({ navigation }) => {
 
       <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}>
         <Text style={styles.deleteButtonText}>Delete Task</Text>
+      </TouchableOpacity>
+
+      {/* Add the Start Task button */}
+      <TouchableOpacity style={styles.startButton} onPress={handleStartTask}>
+        <Text style={styles.startButtonText}>Start Task</Text>
       </TouchableOpacity>
     </View>
   );
@@ -268,6 +299,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   deleteButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  startButton: {
+    backgroundColor: 'green',
+    padding: 15,
+    borderRadius: 10,
+    marginTop: 10,
+    alignItems: 'center',
+  },
+  startButtonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
