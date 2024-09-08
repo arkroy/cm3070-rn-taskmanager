@@ -1,36 +1,62 @@
 import React, { useState } from 'react';
-import { View } from 'react-native';
+import { View, Image, TouchableOpacity, Alert } from 'react-native';
 import { TextInput, Button, Text, useTheme } from 'react-native-paper';
 import * as ImagePicker from 'expo-image-picker';
 import SegmentedControl from '@react-native-segmented-control/segmented-control';
 import * as Auth from 'aws-amplify/auth';
+import * as FileSystem from 'expo-file-system'; // Import FileSystem for saving files
+import { Ionicons } from '@expo/vector-icons'; // For the delete icon
 import styles from './registrationScreen.styles';
-import { createUser } from '../../graphql/mutations'
 
 function RegistrationScreen({ navigation }) {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [profilePicture, setProfilePicture] = useState(null);
+  const [profilePicture, setProfilePicture] = useState(null); // Holds the URI of the saved profile picture
   const [selectedUnit, setSelectedUnit] = useState(0);
   const { colors } = useTheme();
 
   const selectProfilePicture = async () => {
-    const permissionResult =
-      await ImagePicker.requestMediaLibraryPermissionsAsync();
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (permissionResult.granted === false) {
-      alert('Permission to access camera roll is required!');
+      Alert.alert('Permission to access camera roll is required!');
       return;
     }
-    const pickerResult = await ImagePicker.launchImageLibraryAsync();
+
+    const pickerResult = await ImagePicker.launchImageLibraryAsync({
+      allowsEditing: true,
+      quality: 1,
+    });
+
     if (!pickerResult.canceled) {
-      setProfilePicture(pickerResult.uri);
+      const savedUri = await saveImageLocally(pickerResult.assets[0].uri); // Save the selected image to local storage
+      setProfilePicture(savedUri); // Set the URI of the saved image
     }
+  };
+
+  const saveImageLocally = async (uri) => {
+    try {
+      const fileName = uri.split('/').pop(); // Extract the file name from the URI
+      const newPath = `${FileSystem.documentDirectory}${fileName}`; // Define a new path to save the file
+
+      await FileSystem.copyAsync({
+        from: uri,
+        to: newPath,
+      });
+
+      return newPath; // Return the new path of the saved image
+    } catch (error) {
+      console.error('Error saving image:', error);
+      Alert.alert('Error', 'Failed to save profile picture');
+    }
+  };
+
+  const removeProfilePicture = () => {
+    setProfilePicture(null); // Remove the profile picture by setting the URI to null
   };
 
   const handleRegister = async () => {
     try {
-  
       // Perform the sign-up
       const result = await Auth.signUp({
         username: email,
@@ -42,26 +68,15 @@ function RegistrationScreen({ navigation }) {
         },
       });
 
-      // After sign-up, create user in the backend
-      await createUser({
-        variables: {
-          input: {
-            id: result.userSub, // Use the Cognito userSub (unique user ID) for the User ID
-            fullName,
-            email,
-            profilePicture, // This is the profile picture URL (you might want to handle uploads separately)
-            unitOfMeasurement: selectedUnit === 0 ? 'IMPERIAL' : 'METRIC',
-          },
-        },
-      });
-  
+
       // Navigate to the VerificationScreen and pass the user's email as a parameter
       navigation.navigate('Verification', { username: email });
     } catch (error) {
       console.log('Error signing up:', error);
-      alert(`Error signing up: ${error.message}`);
+      Alert.alert(`Error signing up: ${error.message}`);
     }
   };
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>New user registration</Text>
@@ -94,6 +109,23 @@ function RegistrationScreen({ navigation }) {
       <Button onPress={selectProfilePicture} style={styles.button}>
         <Text variant="bodyMedium">Select Profile Picture</Text>
       </Button>
+
+      {/* Display the selected profile picture as a thumbnail */}
+      {profilePicture && (
+        <View style={styles.profilePictureContainer}>
+          <Image
+            source={{ uri: profilePicture }}
+            style={styles.profilePicture}
+          />
+          <TouchableOpacity
+            onPress={removeProfilePicture}
+            style={styles.removeIcon}
+          >
+            <Ionicons name="close-circle" size={24} color="red" />
+          </TouchableOpacity>
+        </View>
+      )}
+
       <Text style={styles.sectionTitle}>Preferences</Text>
       <SegmentedControl
         values={['Imperial', 'Metric']}

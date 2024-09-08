@@ -1,33 +1,46 @@
 import { StyleSheet } from 'react-native';
 
 const styles = StyleSheet.create({
-  button: {
-    marginVertical: 10,
-  },
   container: {
     flex: 1,
-    justifyContent: 'center',
     padding: 20,
   },
-  description: {
-    marginBottom: 20,
-  },
-  input: {
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
     marginBottom: 10,
+  },
+  description: {
+    fontSize: 16,
+    marginBottom: 20,
+    color: '#555',
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 10,
-    marginTop: 20,
+  },
+  input: {
+    marginBottom: 10,
+  },
+  button: {
+    marginVertical: 20,
+  },
+  profilePictureContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  profilePicture: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+  },
+  removeIcon: {
+    marginLeft: 10,
   },
   segmentedControl: {
-    marginVertical: 10,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 10,
+    marginBottom: 20,
   },
 });
 

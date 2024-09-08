@@ -36,6 +36,7 @@ export default function App() {
     const checkAuthStatus = async () => {
       try {
         const { accessToken, idToken } = (await fetchAuthSession()).tokens ?? {};
+        console.log('Auth Session:', { accessToken, idToken }); // Added more logging
         if (accessToken) {
           isAuthenticatedVar(true);
           userVar(idToken.payload);
@@ -44,6 +45,7 @@ export default function App() {
           userVar(null);
         }
       } catch (error) {
+        console.log('No user is signed in:', error);
         isAuthenticatedVar(false);
         userVar(null);
       }
@@ -57,11 +59,23 @@ export default function App() {
     async function register() {
       const token = await registerForPushNotificationsAsync();
       if (token) {
+        console.log('Expo Push Token after registration:', token);
         setExpoPushToken(token);
       } else {
+        console.log('Failed to fetch the Expo push token');
       }
     }
     register();
+
+    // Listen to incoming notifications
+    notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
+      console.log('Notification received:', notification);
+    });
+
+    // Listen to notification response
+    responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
+      console.log('Notification response:', response);
+    });
 
     return () => {
       Notifications.removeNotificationSubscription(notificationListener.current);
@@ -87,6 +101,9 @@ export default function App() {
     
         // Get the Expo push token
         token = (await Notifications.getExpoPushTokenAsync()).data;
+        console.log('Expo Push Token fetched:', token);  // Ensure this logs correctly
+      } else {
+        console.log('Must use physical device for Push Notifications');
       }
   
       if (Platform.OS === 'android') {

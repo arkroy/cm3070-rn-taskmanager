@@ -81,6 +81,18 @@ export const UPDATE_TASK_STATUS = gql`
   }
 `;
 
+export const CREATE_USER_MUTATION = gql`
+  mutation CreateUser($input: CreateUserInput!) {
+    createUser(input: $input) {
+      id
+      fullName
+      email
+      profilePicture
+      unitOfMeasurement
+    }
+  }
+`;
+
 export const CREATE_TASK = gql`
   mutation CreateTask($input: CreateTaskInput!) {
     createTask(input: $input) {
