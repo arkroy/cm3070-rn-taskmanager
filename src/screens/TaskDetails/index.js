@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Image, FlatList, TouchableOpacity, Alert, Linking, Platform } from 'react-native';
+import { View, Text, StyleSheet, Image, FlatList, TouchableOpacity, Alert, Linking, Platform, Modal, ScrollView } from 'react-native';
 import { useReactiveVar, useMutation, gql } from '@apollo/client';
 import * as Location from 'expo-location';
 import { currentTaskVar } from '../../utils/apolloState';
 import MapView, { Marker } from 'react-native-maps';
 import haversine from 'haversine-distance';
+import { Audio } from 'expo-av';  // Import Audio for playback
 import { UPDATE_TASK } from '../../utils/schemas';
 
-// Define the deleteTask mutation locally
 const DELETE_TASK = gql`
   mutation DeleteTask($input: DeleteTaskInput!) {
     deleteTask(input: $input) {
@@ -22,8 +22,10 @@ const TaskDetailsScreen = ({ navigation }) => {
   const [currentLocation, setCurrentLocation] = useState(null);
   const [distance, setDistance] = useState(null);
   const [locationPermissionGranted, setLocationPermissionGranted] = useState(false);
+  const [fullImageModalVisible, setFullImageModalVisible] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [sound, setSound] = useState(null);  // State for handling sound playback
 
-  // Fetch device's current location (only for Android)
   useEffect(() => {
     const fetchLocation = async () => {
       if (Platform.OS === 'android') {
@@ -45,7 +47,6 @@ const TaskDetailsScreen = ({ navigation }) => {
     fetchLocation();
   }, []);
 
-  // Calculate the distance when both current location and task location are available (only for Android)
   useEffect(() => {
     if (Platform.OS === 'android' && currentLocation && task?.latitude && task?.longitude) {
       const start = { latitude: currentLocation.latitude, longitude: currentLocation.longitude };
@@ -57,7 +58,6 @@ const TaskDetailsScreen = ({ navigation }) => {
     }
   }, [currentLocation, task]);
 
-  // Define the mutation for deleting a task
   const [deleteTaskMutation] = useMutation(DELETE_TASK, {
     onCompleted: () => {
       Alert.alert("Task deleted", "The task was successfully deleted.", [
@@ -65,7 +65,6 @@ const TaskDetailsScreen = ({ navigation }) => {
       ]);
     },
     onError: (error) => {
-      console.error("Error deleting task:", error);
       Alert.alert("Error", `Failed to delete task: ${error.message}`);
     }
   });
@@ -76,9 +75,7 @@ const TaskDetailsScreen = ({ navigation }) => {
     if (task && task.id) {
       deleteTaskMutation({
         variables: {
-          input: {
-            id: task.id
-          }
+          input: { id: task.id }
         }
       });
     } else {
@@ -88,7 +85,6 @@ const TaskDetailsScreen = ({ navigation }) => {
 
   const handleStartTask = async () => {
     try {
-      // Update the task's status to INPROGRESS
       await updateTask({
         variables: {
           input: {
@@ -98,13 +94,9 @@ const TaskDetailsScreen = ({ navigation }) => {
         },
       });
 
-      // Set the current task in the reactive variable
       currentTaskVar(task);
-
-      // Navigate back to the Dashboard and start the timer
       navigation.navigate('Dashboard', { startTimerForTask: task });
     } catch (error) {
-      console.error('Error starting task:', error);
       Alert.alert('Error', 'Failed to start the task.');
     }
   };
@@ -124,6 +116,36 @@ const TaskDetailsScreen = ({ navigation }) => {
     Linking.openURL(url);
   };
 
+  const openFullImage = (imageUri) => {
+    setSelectedImage(imageUri);
+    setFullImageModalVisible(true);
+  };
+
+  // Play the voice recording
+  const playVoiceNote = async (voiceNoteUri) => {
+    try {
+      const { sound: playbackObject } = await Audio.Sound.createAsync({ uri: voiceNoteUri });
+      setSound(playbackObject);
+      await playbackObject.playAsync();
+    } catch (error) {
+      Alert.alert('Error', 'Failed to play the voice recording.');
+    }
+  };
+
+  useEffect(() => {
+    return sound
+      ? () => {
+          sound.unloadAsync();  // Clean up sound when component unmounts
+        }
+      : undefined;
+  }, [sound]);
+
+  // Log the voice notes and attachments to debug
+  console.log('TASK DETAILS Task object:', task);
+  console.log('TASK DETAILS Task attachments:', task?.attachments?.items);
+  console.log('TASK DETAILS Task voice notes:', task?.voiceNotes?.items);
+  console.log('TASK DETAILS Task notes:', task?.notes);
+
   if (!task) {
     return (
       <View style={styles.container}>
@@ -133,7 +155,7 @@ const TaskDetailsScreen = ({ navigation }) => {
   }
 
   return (
-    <View style={styles.container}>
+    <ScrollView contentContainerStyle={styles.scrollContainer}>
       <View style={styles.taskDetails}>
         <Text style={styles.title}>{task.title}</Text>
         <Text style={styles.time}>
@@ -181,12 +203,30 @@ const TaskDetailsScreen = ({ navigation }) => {
             data={task.attachments.items}
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => (
-              <Image
-                source={{ uri: item.filePath }}
-                style={styles.attachmentImage}
-              />
+              <TouchableOpacity onPress={() => openFullImage(item.filePath)}>
+                <Image
+                  source={{ uri: item.filePath }}
+                  style={styles.attachmentImage}
+                />
+              </TouchableOpacity>
             )}
             horizontal
+          />
+        </View>
+      )}
+
+      {/* Voice Note Section */}
+      {task.voiceNotes?.items?.length > 0 && (
+        <View style={styles.voiceNotesSection}>
+          <Text style={styles.voiceNotesHeader}>Voice Notes</Text>
+          <FlatList
+            data={task.voiceNotes.items}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <TouchableOpacity style={styles.voiceNoteButton} onPress={() => playVoiceNote(item.fileUrl)}>
+                <Text style={styles.voiceNoteText}>Play Voice Note</Text>
+              </TouchableOpacity>
+            )}
           />
         </View>
       )}
@@ -195,29 +235,39 @@ const TaskDetailsScreen = ({ navigation }) => {
         <Text style={styles.deleteButtonText}>Delete Task</Text>
       </TouchableOpacity>
 
-      {/* Add the Start Task button */}
       <TouchableOpacity style={styles.startButton} onPress={handleStartTask}>
         <Text style={styles.startButtonText}>Start Task</Text>
       </TouchableOpacity>
-    </View>
+
+      {/* Full Image Modal */}
+      <Modal
+        visible={fullImageModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setFullImageModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <TouchableOpacity onPress={() => setFullImageModalVisible(false)} style={styles.closeModal}>
+            <Text style={styles.closeText}>Close</Text>
+          </TouchableOpacity>
+          {selectedImage && (
+            <Image source={{ uri: selectedImage }} style={styles.fullImage} />
+          )}
+        </View>
+      </Modal>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f8f8f8',
+  scrollContainer: {
+    padding: 10,
   },
   taskDetails: {
     padding: 20,
     backgroundColor: '#fff',
     borderRadius: 10,
     marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 3,
   },
   title: {
     fontSize: 24,
@@ -291,6 +341,25 @@ const styles = StyleSheet.create({
     marginRight: 10,
     borderRadius: 10,
   },
+  voiceNotesSection: {
+    marginTop: 20,
+  },
+  voiceNotesHeader: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  voiceNoteButton: {
+    backgroundColor: '#007AFF',
+    padding: 10,
+    borderRadius: 10,
+    marginBottom: 10,
+  },
+  voiceNoteText: {
+    color: '#fff',
+    fontSize: 16,
+    textAlign: 'center',
+  },
   deleteButton: {
     backgroundColor: 'red',
     padding: 15,
@@ -314,6 +383,27 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullImage: {
+    width: '90%',
+    height: '70%',
+    resizeMode: 'contain',
+  },
+  closeModal: {
+    position: 'absolute',
+    top: 40,
+    right: 20,
+    padding: 10,
+  },
+  closeText: {
+    color: '#fff',
+    fontSize: 18,
   },
 });
 

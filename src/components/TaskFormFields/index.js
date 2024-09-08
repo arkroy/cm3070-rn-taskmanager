@@ -32,6 +32,7 @@ const TaskFormFields = ({
       placeholder="Enter task title"
     />
 
+    {/* Date Picker */}
     <Text style={styles.label}>Date (Mandatory)</Text>
     <TouchableOpacity onPress={() => setShowDatePicker(true)} style={styles.datePicker}>
       <Text>{moment(date).format('YYYY-MM-DD')}</Text>
@@ -49,9 +50,10 @@ const TaskFormFields = ({
       />
     )}
 
+    {/* Start Time Picker */}
     <Text style={styles.label}>Start Time (Mandatory)</Text>
     <TouchableOpacity onPress={() => setShowStartTimePicker(true)} style={styles.datePicker}>
-      <Text>{startTime.toLocaleTimeString()}</Text>
+      <Text>{moment(startTime).format('hh:mm A')}</Text>
     </TouchableOpacity>
     {showStartTimePicker && (
       <DateTimePicker
@@ -65,9 +67,10 @@ const TaskFormFields = ({
       />
     )}
 
+    {/* End Time Picker */}
     <Text style={styles.label}>End Time (Mandatory)</Text>
     <TouchableOpacity onPress={() => setShowEndTimePicker(true)} style={styles.datePicker}>
-      <Text>{endTime.toLocaleTimeString()}</Text>
+      <Text>{moment(endTime).format('hh:mm A')}</Text>
     </TouchableOpacity>
     {showEndTimePicker && (
       <DateTimePicker
@@ -81,6 +84,7 @@ const TaskFormFields = ({
       />
     )}
 
+    {/* Personal/Professional Switch */}
     <Text style={styles.label}>Personal/Professional</Text>
     <View style={styles.switchContainer}>
       <Text>{isPersonal ? 'Personal' : 'Professional'}</Text>
@@ -90,6 +94,7 @@ const TaskFormFields = ({
       />
     </View>
 
+    {/* Notes Field */}
     <Text style={styles.label}>Notes (Optional)</Text>
     <TextInput
       style={[styles.input, styles.textArea]}

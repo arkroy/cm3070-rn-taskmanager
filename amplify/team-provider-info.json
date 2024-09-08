@@ -20,6 +20,21 @@
       },
       "storage": {
         "taskAttachments": {}
+      },
+      "analytics": {
+        "taskmanagerapp": {},
+        "Pinpoint": {
+          "Name": "taskmanagerapp-dev",
+          "Id": "612d4250f62045aaa784f9ed13e2c97f",
+          "Region": "us-east-1"
+        }
+      },
+      "notifications": {
+        "Pinpoint": {
+          "Name": "taskmanagerapp-dev",
+          "Id": "612d4250f62045aaa784f9ed13e2c97f",
+          "Region": "us-east-1"
+        }
       }
     }
   }

@@ -41,6 +41,20 @@ export const LIST_TASKS = gql`
         latitude
         longitude
         cost
+        notes 
+        attachments {
+          items {
+            id
+            filePath
+            fileType
+          }
+        }
+        voiceNotes {
+          items {
+            id
+            fileUrl
+          }
+        }
         status
         type
         userId
@@ -81,6 +95,19 @@ export const CREATE_TASK = gql`
       type
       notes
       status
+    }
+  }
+`;
+
+export const CREATE_VOICE_NOTE = gql`
+  mutation CreateTask($input: CreateVoiceNoteInput!) {
+    createVoiceNote(input: $input) {
+    id
+    fileUrl
+    task {
+       id
+       title
+      }
     }
   }
 `;

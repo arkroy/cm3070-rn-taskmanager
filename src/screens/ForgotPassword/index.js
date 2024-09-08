@@ -19,7 +19,6 @@ function ForgotPasswordScreen({ navigation }) {
       });
       setStage(2); // Move to the next stage to allow the user to enter the code and new password
     } catch (error) {
-      console.log('Error sending code:', error);
       alert('Error sending code. Please try again.');
     }
   };

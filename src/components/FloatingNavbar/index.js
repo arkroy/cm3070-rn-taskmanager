@@ -11,9 +11,6 @@ const FloatingNavBar = () => {
       <TouchableOpacity onPress={() => navigation.navigate('Dashboard')}>
         <Ionicons name="home" size={28} color="white" />
       </TouchableOpacity>
-      <TouchableOpacity onPress={() => navigation.navigate('Schedule')}>
-        <Ionicons name="calendar" size={28} color="white" />
-      </TouchableOpacity>
       <TouchableOpacity onPress={() => navigation.navigate('Insights')}>
         <Ionicons name="bar-chart" size={28} color="white" />
       </TouchableOpacity>

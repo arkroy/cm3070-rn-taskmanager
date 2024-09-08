@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
-import { KeyboardAvoidingView, FlatList, StyleSheet, Button, Alert, Platform } from 'react-native';
+import { KeyboardAvoidingView, ScrollView, StyleSheet, Button, Alert, Platform, View } from 'react-native';
 import { useReactiveVar, useMutation } from '@apollo/client';
 import { currentTaskVar, userVar } from '../../utils/apolloState';
-import { CREATE_TASK, UPDATE_TASK, CREATE_ATTACHMENT } from '../../utils/schemas';
+import { CREATE_TASK, UPDATE_TASK, CREATE_ATTACHMENT, CREATE_VOICE_NOTE } from '../../utils/schemas';
 import TaskFormFields from '../../components/TaskFormFields';
 import AttachmentsSection from '../../components/Attachements';
 import VoiceInput from '../../components/VoiceInput';
 import PlacesInput from '../../components/PlacesInput'; // Import PlacesInput
 import * as ImagePicker from 'expo-image-picker'; // Import ImagePicker
 import { Audio } from 'expo-av'; // Import Audio from expo-av for voice input
-import { fileToBase64 } from '../../utils/audioUtils';
+import * as FileSystem from 'expo-file-system';
+import * as Notifications from 'expo-notifications';
 import moment from 'moment';
 
 const EditTaskForm = ({ navigation }) => {
@@ -38,6 +39,25 @@ const EditTaskForm = ({ navigation }) => {
   const [createTask] = useMutation(CREATE_TASK);
   const [updateTask] = useMutation(UPDATE_TASK);
   const [createAttachment] = useMutation(CREATE_ATTACHMENT);
+  const [createVoiceNote] = useMutation(CREATE_VOICE_NOTE);  // Correctly handle the creation of voice notes
+
+  // PUSH Notifications
+  async function scheduleTaskNotification(task) {
+    const taskStartTime = new Date(task.startTime);
+    const notificationTime = new Date(taskStartTime.getTime() - 15 * 60 * 1000); // 15 minutes before
+
+    if (notificationTime > new Date()) {
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: `Task Reminder`,
+          body: `Your task "${task.title}" starts in 15 minutes!`,
+        },
+        trigger: {
+          date: notificationTime,
+        },
+      });
+    }
+  }
 
   // Image handling functions
   const pickImage = async () => {
@@ -48,7 +68,8 @@ const EditTaskForm = ({ navigation }) => {
     });
 
     if (!result.canceled) {
-      setAttachments([...attachments, result.uri]);
+      const localUri = await saveImageLocally(result.assets[0].uri);
+      setAttachments([...attachments, localUri]);
     }
   };
 
@@ -59,8 +80,16 @@ const EditTaskForm = ({ navigation }) => {
     });
 
     if (!result.canceled) {
-      setAttachments([...attachments, result.uri]);
+      const localUri = await saveImageLocally(result.assets[0].uri);
+      setAttachments([...attachments, localUri]);
     }
+  };
+
+  const saveImageLocally = async (uri) => {
+    const fileName = uri.split('/').pop();
+    const newPath = `${FileSystem.documentDirectory}${fileName}`;
+    await FileSystem.copyAsync({ from: uri, to: newPath });
+    return newPath;
   };
 
   const removeAttachment = (uri) => {
@@ -69,14 +98,12 @@ const EditTaskForm = ({ navigation }) => {
 
   // Handle location selection
   const handleLocationSelect = (locationData) => {
-    console.log('Location selected:', locationData);
     setLocation(locationData.address || ''); // Ensure it's never undefined
     setLatitude(locationData.latitude || 0); // Provide default values
     setLongitude(locationData.longitude || 0); // Provide default values
   };
 
   // Voice recording functions
-
   const startRecording = async () => {
     try {
       const { granted } = await Audio.requestPermissionsAsync();
@@ -98,13 +125,21 @@ const EditTaskForm = ({ navigation }) => {
     try {
       await recording.stopAndUnloadAsync();
       const uri = recording.getURI();
-      const status = await recording.getStatusAsync();
-      setPlaybackUri(uri);
-      console.log('Recording saved at:', uri);
-      console.log('Recording duration (ms):', status.durationMillis);
+      const localUri = await saveRecordingLocally(uri);
+      setPlaybackUri(localUri);
     } catch (error) {
       console.error('Failed to stop recording', error);
     }
+  };
+
+  const saveRecordingLocally = async (uri) => {
+    const fileName = uri.split('/').pop();
+    const newPath = `${FileSystem.documentDirectory}${fileName}`;
+    await FileSystem.moveAsync({
+      from: uri,
+      to: newPath,
+    });
+    return newPath;
   };
 
   const playRecording = async () => {
@@ -136,6 +171,12 @@ const EditTaskForm = ({ navigation }) => {
       return;
     }
 
+    // Validation: End time cannot be less than start time
+    if (moment(endTime).isBefore(moment(startTime))) {
+      Alert.alert("Error", "End time cannot be earlier than the start time.");
+      return;
+    }
+
     const today = moment().startOf('day');
     const selectedDate = moment(date).startOf('day');
 
@@ -164,7 +205,7 @@ const EditTaskForm = ({ navigation }) => {
       latitude,
       longitude,
       type: isPersonal ? 'PERSONAL' : 'PROFESSIONAL',
-      notes,
+      notes, // Ensure notes are passed to the mutation
       status: 'INCOMPLETE',
       userId,
     };
@@ -172,12 +213,17 @@ const EditTaskForm = ({ navigation }) => {
     console.log("Task input:", taskInput);
 
     try {
+      let taskId;
+      let taskData;
+
       if (currentTask) {
         await updateTask({
           variables: {
             input: { ...taskInput, id: currentTask.id },
           },
         });
+        taskId = currentTask.id;
+        taskData = currentTask;
         Alert.alert("Success", "Task updated successfully.");
       } else {
         const { data } = await createTask({
@@ -185,12 +231,17 @@ const EditTaskForm = ({ navigation }) => {
             input: taskInput,
           },
         });
-        const taskId = data?.createTask?.id;
-
-        await handleAttachments(taskId);
-
+        taskId = data?.createTask?.id;
+        taskData = data?.createTask; // Use the newly created task for notification
         Alert.alert("Success", "Task created successfully.");
       }
+
+      await handleAttachments(taskId);
+      await handleVoiceNotes(taskId);
+      
+      // Use the correct task data for scheduling notifications
+      await scheduleTaskNotification(taskData);  
+      
       navigation.goBack();
     } catch (error) {
       console.error("Error saving task:", error);
@@ -199,11 +250,6 @@ const EditTaskForm = ({ navigation }) => {
   };
 
   const handleAttachments = async (taskId) => {
-    if (!taskId) {
-      console.error("Task ID is null, cannot create attachments.");
-      return;
-    }
-
     for (let attachment of attachments) {
       if (attachment) {
         try {
@@ -212,7 +258,7 @@ const EditTaskForm = ({ navigation }) => {
               input: {
                 taskId,
                 filePath: attachment,
-                fileType: "image",
+                fileType: 'image',
               },
             },
           });
@@ -223,54 +269,73 @@ const EditTaskForm = ({ navigation }) => {
     }
   };
 
+  const handleVoiceNotes = async (taskId) => {
+    if (playbackUri) {
+      try {
+        await createVoiceNote({
+          variables: {
+            input: {
+              taskId,
+              fileUrl: playbackUri,
+            },
+          },
+        });
+      } catch (error) {
+        console.error("Failed to create voice note:", error);
+      }
+    }
+  };
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={100}
     >
-      <FlatList
-        data={[{ key: 'form' }]}
-        renderItem={() => (
-          <>
-            <TaskFormFields
-              title={title} setTitle={setTitle}
-              date={date} setDate={setDate}
-              startTime={startTime} setStartTime={setStartTime}
-              endTime={endTime} setEndTime={setEndTime}
-              isPersonal={isPersonal} setIsPersonal={setIsPersonal}
-              showDatePicker={showDatePicker} setShowDatePicker={setShowDatePicker}
-              showStartTimePicker={showStartTimePicker} setShowStartTimePicker={setShowStartTimePicker}
-              showEndTimePicker={showEndTimePicker} setShowEndTimePicker={setShowEndTimePicker}
-            />
+      <ScrollView 
+        nestedScrollEnabled={true} 
+        contentContainerStyle={{ flexGrow: 1 }}
+        keyboardShouldPersistTaps="handled" // Fix to allow tapping on places input suggestions
+      >
+        <TaskFormFields
+          title={title} setTitle={setTitle}
+          date={date} setDate={setDate}
+          startTime={startTime} setStartTime={setStartTime}
+          endTime={endTime} setEndTime={setEndTime}
+          isPersonal={isPersonal} setIsPersonal={setIsPersonal}
+          showDatePicker={showDatePicker} setShowDatePicker={setShowDatePicker}
+          showStartTimePicker={showStartTimePicker} setShowStartTimePicker={setShowStartTimePicker}
+          showEndTimePicker={showEndTimePicker} setShowEndTimePicker={setShowEndTimePicker}
+          notes={notes} setNotes={setNotes} // Pass notes state to form fields
+        />
 
-            <PlacesInput
-              placeholder="Enter location"
-              onLocationSelect={({ address, latitude, longitude }) =>
-                handleLocationSelect({ address, latitude, longitude })
-              }
-            />
+        <View style={{ zIndex: 100 }}> 
+          {/* Wrapped to avoid VisualizedLists error */}
+          <PlacesInput
+            placeholder="Enter location"
+            onLocationSelect={({ address, latitude, longitude }) =>
+              handleLocationSelect({ address, latitude, longitude })
+            }
+          />
+        </View>
 
-            <AttachmentsSection
-              attachments={attachments}
-              pickImage={pickImage}
-              takePicture={takePicture}
-              removeAttachment={removeAttachment}
-            />
+        <AttachmentsSection
+          attachments={attachments}
+          pickImage={pickImage}
+          takePicture={takePicture}
+          removeAttachment={removeAttachment}
+        />
 
-            <VoiceInput
-              recording={recording}
-              startRecording={startRecording}
-              stopRecording={stopRecording}
-              playRecording={playRecording}
-              playbackUri={playbackUri}
-            />
+        <VoiceInput
+          recording={recording}
+          startRecording={startRecording}
+          stopRecording={stopRecording}
+          playRecording={playRecording}
+          playbackUri={playbackUri}
+        />
 
-            <Button title="Save Task" onPress={handleSubmit} />
-          </>
-        )}
-        keyExtractor={(item) => item.key}
-      />
+        <Button title="Save Task" onPress={handleSubmit} />
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 };

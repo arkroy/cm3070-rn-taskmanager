@@ -35,10 +35,14 @@ function DashboardScreen({ route, navigation }) {
     },
   });
 
+  
   const [updateTask] = useMutation(UPDATE_TASK);
 
   // Effect to set the most relevant task for the TimerCard
   useEffect(() => {
+
+    console.log('Current tasks:', data?.listTasks?.items); // Log fetched tasks
+
     if (currentDateTasks?.listTasks?.items) {
       const now = new Date();
 
@@ -63,7 +67,6 @@ function DashboardScreen({ route, navigation }) {
   }, [route.params]);
 
   const handleTimerPress = async (status) => {
-    console.log(`Timer Status: ${status ? 'Start' : 'Stop'}`);
 
     if (status) {
       setIsTimerActive(true);

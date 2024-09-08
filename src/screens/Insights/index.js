@@ -4,6 +4,7 @@ import { BarChart, LineChart } from 'react-native-chart-kit';
 import { useQuery } from '@apollo/client';
 import { SegmentedButtons } from 'react-native-paper';
 import { LIST_TASKS } from '../../utils/schemas';
+import FloatingNavBar from '../../components/FloatingNavbar';
 import moment from 'moment';
 
 const screenWidth = Dimensions.get('window').width;
@@ -112,12 +113,10 @@ const InsightsPage = () => {
   };
 
   if (loading) {
-    console.log('Loading task data...');
     return <Text>Loading insights data...</Text>;
   }
 
   if (error) {
-    console.error('Error loading tasks:', error);
     return <Text>Error loading insights: {error.message}</Text>;
   }
 
@@ -186,7 +185,9 @@ const InsightsPage = () => {
         height={220}
         chartConfig={chartConfig}
       />
+      <FloatingNavBar />
     </ScrollView>
+    
   );
 };
 

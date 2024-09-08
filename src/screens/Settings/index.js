@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, Alert, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, Button, Image, StyleSheet, Alert, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { useQuery, useMutation } from '@apollo/client';
 import { GET_USER, UPDATE_USER } from '../../utils/schemas';
 import { userVar } from '../../utils/apolloState';
-import { updatePassword } from 'aws-amplify/auth'; // Use the correct function for Amplify v6.5
+import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
 
 const SettingsScreen = ({ navigation }) => {
   const user = userVar(); // Fetch user data from Apollo's reactive variable
@@ -71,7 +72,41 @@ const SettingsScreen = ({ navigation }) => {
     }
   };
 
-  // Updated password change handler using Amplify v6.5's `updatePassword`
+  // Image handling functions
+  const pickImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
+      allowsEditing: true,
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      const localUri = await saveImageLocally(result.assets[0].uri);
+      setUserDetails({ ...userDetails, profilePicture: localUri });
+    }
+  };
+
+  const takePicture = async () => {
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      const localUri = await saveImageLocally(result.assets[0].uri);
+      setUserDetails({ ...userDetails, profilePicture: localUri });
+    }
+  };
+
+  const saveImageLocally = async (uri) => {
+    const fileName = uri.split('/').pop();
+    const newPath = `${FileSystem.documentDirectory}${fileName}`;
+    await FileSystem.copyAsync({ from: uri, to: newPath });
+    return newPath;
+  };
+
+  const [updatePassword] = useMutation(UPDATE_USER);
+
   const handleChangePassword = async () => {
     if (newPassword !== confirmPassword) {
       Alert.alert('Error', 'Passwords do not match');
@@ -112,12 +147,15 @@ const SettingsScreen = ({ navigation }) => {
             onChangeText={(text) => setUserDetails({ ...userDetails, email: text })}
           />
 
-          <Text style={styles.label}>Profile Picture (URL)</Text>
-          <TextInput
-            style={styles.input}
-            value={userDetails.profilePicture}
-            onChangeText={(text) => setUserDetails({ ...userDetails, profilePicture: text })}
-          />
+          {/* Profile Picture Section */}
+          <Text style={styles.label}>Profile Picture</Text>
+          {userDetails.profilePicture ? (
+            <Image source={{ uri: userDetails.profilePicture }} style={styles.profilePicture} />
+          ) : (
+            <Text>No profile picture uploaded.</Text>
+          )}
+          <Button title="Pick from Gallery" onPress={pickImage} />
+          <Button title="Take a Picture" onPress={takePicture} />
 
           <Text style={styles.label}>Preferred Timezone</Text>
           <TextInput
@@ -192,6 +230,12 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 10,
     marginBottom: 20,
+  },
+  profilePicture: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    marginBottom: 10,
   },
   unitToggle: {
     flexDirection: 'row',

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, FlatList, Button, Image, StyleSheet, TouchableHighlight, Text } from 'react-native';
+import { View, FlatList, Image, StyleSheet, TouchableHighlight, Text, Button } from 'react-native';
 
 const AttachmentsSection = ({ attachments, pickImage, takePicture, removeAttachment }) => (
   <View style={styles.attachmentsContainer}>
@@ -25,11 +25,30 @@ const AttachmentsSection = ({ attachments, pickImage, takePicture, removeAttachm
 );
 
 const styles = StyleSheet.create({
-  attachmentsContainer: { marginBottom: 20 },
-  attachmentWrapper: { position: 'relative' },
-  attachmentImage: { width: 100, height: 100, marginRight: 10, borderRadius: 8 },
-  removeButton: { position: 'absolute', top: 5, right: 5, backgroundColor: 'red', borderRadius: 50, padding: 5 },
-  removeButtonText: { color: '#fff', fontWeight: 'bold' },
+  attachmentsContainer: {
+    marginBottom: 20,
+  },
+  attachmentWrapper: {
+    position: 'relative',
+    marginRight: 10,
+  },
+  attachmentImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 8,
+  },
+  removeButton: {
+    position: 'absolute',
+    top: 5,
+    right: 5,
+    backgroundColor: 'red',
+    borderRadius: 50,
+    padding: 5,
+  },
+  removeButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
 });
 
 export default AttachmentsSection;

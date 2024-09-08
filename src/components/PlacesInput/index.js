@@ -1,4 +1,3 @@
-// PlacesInput.js
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
@@ -9,7 +8,7 @@ function PlacesInput({ placeholder, onLocationSelect }) {
       <GooglePlacesAutocomplete
         placeholder={placeholder}
         minLength={2}
-        fetchDetails={true} // Important to get detailed location info
+        fetchDetails={true}
         onPress={(data, details = null) => {
           if (details) {
             const location = {
@@ -17,23 +16,19 @@ function PlacesInput({ placeholder, onLocationSelect }) {
               latitude: details.geometry.location.lat,
               longitude: details.geometry.location.lng,
             };
-            console.log("Location selected:", location);
             onLocationSelect(location);
-          } else {
-            console.error('No details available for selected location');
           }
         }}
         query={{
-          key: 'AIzaSyBARAPcaDbFUDfLo4WrfTfiXJzMxaExI0A', // Replace with your actual Google API key
+          key: 'AIzaSyBARAPcaDbFUDfLo4WrfTfiXJzMxaExI0A',
           language: 'en',
         }}
         styles={{
           textInputContainer: styles.textInputContainer,
           textInput: styles.textInput,
-          predefinedPlacesDescription: {
-            color: '#1faadb',
-          },
         }}
+        enablePoweredByContainer={false} // Remove the "Powered by Google" logo for a cleaner UI
+        keyboardShouldPersistTaps="always" // Ensure that taps on the suggestions work
       />
     </View>
   );
