@@ -81,7 +81,7 @@ export const UPDATE_TASK_STATUS = gql`
   }
 `;
 
-export const CREATE_USER_MUTATION = gql`
+export const CREATE_USER = gql`
   mutation CreateUser($input: CreateUserInput!) {
     createUser(input: $input) {
       id
