@@ -12,7 +12,7 @@ import * as FileSystem from 'expo-file-system';
 const AppHeader = ({ screen }) => {
   const navigation = useNavigation();
   const user = userVar();
-  const [imageExists, setImageExists] = useState(false); // New state to check if the image exists
+  const [imageExists, setImageExists] = useState(false); // State to check if the image exists
 
   // Fetch user data if it's not available
   const { data, loading } = useQuery(GET_USER, {
@@ -35,6 +35,8 @@ const AppHeader = ({ screen }) => {
     if (user?.profilePicture) {
       // Check if the file exists
       checkFileExists(user.profilePicture);
+    } else {
+      setImageExists(false);  // Fallback if profile picture is undefined
     }
   }, [screen, user]);
 
@@ -68,7 +70,7 @@ const AppHeader = ({ screen }) => {
         </TouchableOpacity>
       );
     } else if (screen === 'Dashboard') {
-      // Show a default profile image if the file does not exist
+      // Show a default profile icon if no profile picture is available
       return (
         <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
           <Ionicons name="person-circle" size={40} color="black" style={styles.icon} />
@@ -109,10 +111,7 @@ const AppHeader = ({ screen }) => {
     }
   };
 
-  if (loading || !user?.profilePicture) {
-    return null;
-  }
-
+  // Don't return null if the profile picture is undefined; handle the case gracefully
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
