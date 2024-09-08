@@ -5,6 +5,7 @@ import { GET_USER, UPDATE_USER } from '../../utils/schemas';
 import { userVar } from '../../utils/apolloState';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
+import Loading from '../../components/Loading';
 
 const SettingsScreen = ({ navigation }) => {
   const user = userVar(); // Fetch user data from Apollo's reactive variable
@@ -126,7 +127,7 @@ const SettingsScreen = ({ navigation }) => {
     return <Text>Error: User ID is missing. Please log in.</Text>;
   }
 
-  if (loading) return <Text>Loading...</Text>;
+  if (loading) return  <Loading />;
   if (error) return <Text>Error loading user details: {error.message}</Text>;
 
   return (

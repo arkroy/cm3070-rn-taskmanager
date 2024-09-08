@@ -6,6 +6,7 @@ import { SegmentedButtons } from 'react-native-paper';
 import { LIST_TASKS } from '../../utils/schemas';
 import FloatingNavBar from '../../components/FloatingNavbar';
 import moment from 'moment';
+import Loading from '../../components/Loading';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -113,7 +114,7 @@ const InsightsPage = () => {
   };
 
   if (loading) {
-    return <Text>Loading insights data...</Text>;
+    return <Loading/>;
   }
 
   if (error) {
