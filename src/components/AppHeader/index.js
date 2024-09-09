@@ -119,7 +119,7 @@ const AppHeader = ({ screen }) => {
         <Text>ChoreChamp</Text>
         {renderRightIcon()}
         <TouchableOpacity onPress={logout}>
-          <Ionicons name="notifications" size={24} color="black" style={styles.icon} />
+          <Ionicons name="log-out" size={24} color="black" style={styles.icon} />
         </TouchableOpacity>
       </View>
     </SafeAreaView>

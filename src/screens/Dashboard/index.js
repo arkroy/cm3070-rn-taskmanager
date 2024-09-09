@@ -10,6 +10,7 @@ import TaskList from '../../components/TaskList';
 import TimerCard from '../../components/TimeCard';
 import DateFilter from '../../components/DateFilter';
 import FloatingNavBar from '../../components/FloatingNavbar';
+import * as Haptics from 'expo-haptics';
 
 function DashboardScreen({ route, navigation }) {
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -72,10 +73,11 @@ function DashboardScreen({ route, navigation }) {
   const handleTimerPress = async (status) => {
     if (status) {
       setIsTimerActive(true);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       setStartTimerTime(new Date());
     } else {
       setIsTimerActive(false);
-
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); 
       const endTime = new Date();
       const actualDuration = moment(endTime).diff(startTimerTime, 'seconds');
       console.log(`Task completed in ${actualDuration} seconds.`);

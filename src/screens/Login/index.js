@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { View, TouchableOpacity } from 'react-native';
-import { TextInput, Button, Text, useTheme } from 'react-native-paper';
+import { View, TextInput, Text, TouchableOpacity, Button } from 'react-native';
 import { signIn } from '@aws-amplify/auth';
 import { isAuthenticatedVar, userVar } from '../../utils/apolloState'; // Import the reactive variable
 import styles from './loginScreen.styles';
@@ -9,19 +8,18 @@ function LoginScreen({ navigation }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
-  const { colors } = useTheme();
 
   const handleLogin = async () => {
     setErrorMessage(''); // Reset any previous error messages
-  
+
     try {
       if (!username.trim() || !password.trim()) {
         setErrorMessage("Email and Password are required.");
         return;
       }
-  
+
       console.log('Attempting sign in with:', username.trim());
-  
+
       // Sign in the user using Amplify Auth
       const user = await signIn({
         username: username.trim(),
@@ -30,20 +28,16 @@ function LoginScreen({ navigation }) {
           authFlowType: 'USER_PASSWORD_AUTH',
         },
       });
-  
+
       if (user) {
-        // Assuming user is successfully signed in, fetch the current session
-        // const session = await Auth.currentSession();
-        // const token = session.getIdToken().getJwtToken();
-  
-        // Store the user details and token in the reactive variable
+        // Store the user details in the reactive variable
         userVar({
           ...user.attributes,
         });
-  
+
         // Update the authentication state in the reactive variable
         isAuthenticatedVar(true);
-  
+
         // Navigate to the Dashboard
         navigation.navigate('Dashboard');
       } else {
@@ -66,7 +60,7 @@ function LoginScreen({ navigation }) {
   return (
     <View style={styles.container}>
       <TextInput
-        label="Email Address"
+        placeholder="Email Address"
         value={username}
         onChangeText={setUsername}
         style={styles.input}
@@ -74,24 +68,28 @@ function LoginScreen({ navigation }) {
         autoCapitalize="none"
       />
       <TextInput
-        label="Password"
+        placeholder="Password"
         value={password}
         onChangeText={setPassword}
         style={styles.input}
         secureTextEntry
       />
       {errorMessage && <Text style={styles.errorMessage}>{errorMessage}</Text>}
-      <Button mode="contained" onPress={handleLogin} style={styles.button}>
-        <Text variant="bodyMedium">Login</Text>
-      </Button>
+      <View style={styles.buttonRow}>
+      <TouchableOpacity style={styles.primaryButtonContainer} onPress={handleLogin}>
+        <Text style={styles.buttonText}>Login</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.secondaryButtonContainer} onPress={handleSignup}>
+        <Text style={styles.buttonText}>Register Now</Text>
+      </TouchableOpacity>
+      </View>
       <TouchableOpacity onPress={handleForgotPassword}>
-        <Text style={[styles.link, { color: colors.primary }]}>
+        <Text style={styles.link}>
           Forgot Password?
         </Text>
       </TouchableOpacity>
-      <Button mode="outlined" onPress={handleSignup} style={styles.button}>
-        <Text variant="bodyMedium">Register Now</Text>
-      </Button>
+     
     </View>
   );
 }

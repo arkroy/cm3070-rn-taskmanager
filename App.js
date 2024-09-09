@@ -40,6 +40,7 @@ export default function App() {
         if (accessToken) {
           isAuthenticatedVar(true);
           userVar(idToken.payload);
+          console.log('User signed in:', idToken.payload)
         } else {
           isAuthenticatedVar(false);
           userVar(null);

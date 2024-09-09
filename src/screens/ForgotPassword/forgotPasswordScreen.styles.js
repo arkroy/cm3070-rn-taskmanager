@@ -5,18 +5,36 @@ export default StyleSheet.create({
     marginVertical: 10,
   },
   container: {
-    backgroundColor: '#fff',
-    flex: 1,
+    display: 'flex',
+    alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: '#FFF7D4',
     padding: 20,
+    height: '100%',
   },
   input: {
-    backgroundColor: '#f9f9f9',
-    marginBottom: 15, // background color for the input fields
+    marginTop: 20,
+    width: '90%',
+    padding: 20,
+    borderColor: '#ccc',
+    borderWidth: 1,
+    alignSelf: 'center',
+    backgroundColor: '#DBD9D2',
+    borderRadius: 30,
+    paddingHorizontal: 20,
+    marginBottom: 10,
   },
-  link: {
-    fontSize: 16,
-    marginVertical: 15,
+  primaryButtonContainer: {
+    backgroundColor: '#000731',
+    borderRadius: 30,
+    width: '80%',
+    marginTop: 30,
+  },
+  buttonText: {
     textAlign: 'center',
+    color: '#FFFFFF',
+    padding: 15,
+    fontSize: 16,
+    alignSelf: 'center',
   },
 });
