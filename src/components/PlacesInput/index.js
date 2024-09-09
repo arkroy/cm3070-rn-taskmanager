@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
+import { GOOGLE_API_KEY } from '../../../apikeys';
 
 function PlacesInput({ placeholder, onLocationSelect }) {
   return (
@@ -20,7 +21,7 @@ function PlacesInput({ placeholder, onLocationSelect }) {
           }
         }}
         query={{
-          key: 'AIzaSyBARAPcaDbFUDfLo4WrfTfiXJzMxaExI0A',
+          key: 'GOOGLE_API_KEY',
           language: 'en',
         }}
         styles={{
