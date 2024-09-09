@@ -21,7 +21,7 @@ function PlacesInput({ placeholder, onLocationSelect }) {
           }
         }}
         query={{
-          key: 'GOOGLE_API_KEY',
+          key: GOOGLE_API_KEY,
           language: 'en',
         }}
         styles={{
