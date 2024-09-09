@@ -2,7 +2,6 @@
 
 # dependencies
 node_modules/
-apikeys.js
 
 # Expo
 .expo/
@@ -97,3 +96,4 @@ yarn-error.*
 *.tsbuildinfo
 
 # @end expo-cli
+apikeys.js
